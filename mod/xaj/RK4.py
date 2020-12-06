@@ -17,9 +17,13 @@
 # along with XAJ.  If not, see <http://www.gnu.org/licenses/>.
 
 
-def RK4(rhs, state, dt):
-    k1 = dt * rhs(state           )
-    k2 = dt * rhs(state + 0.5 * k1)
-    k3 = dt * rhs(state + 0.5 * k2)
-    k4 = dt * rhs(state +       k3)
-    return state + k1 / 6 + k2 / 3 + k3 / 3 + k4 / 6
+def RK4(rhs):
+
+    def integrate(state, dt): # closure on rhs
+        k1 = dt * rhs(state           )
+        k2 = dt * rhs(state + 0.5 * k1)
+        k3 = dt * rhs(state + 0.5 * k2)
+        k4 = dt * rhs(state +       k3)
+        return state + k1 / 6 + k2 / 3 + k3 / 3 + k4 / 6
+
+    return integrate
