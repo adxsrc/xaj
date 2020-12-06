@@ -55,6 +55,40 @@ class DP5:
             k6  = rhs(xch[5], Y) # will be used in the next step, hence the output
             E   =                 eh [0]*k0 +             eh [2]*k2 + eh [3]*k3 + eh [4]*k4 + eh [5]*k5 + eh [6]*k6
 
-            return Y, E, k6
+            return DP5Output(x, y, h, k0, k2, k3, k4, k5, k6, Y), Y, E, k6
 
         self.step = step
+
+
+class DP5Output:
+    """Dense Output of the DP5 Schemef"""
+
+    d = np.array([
+        -12715105075/11282082432,
+        +0,
+        +87487479700/32700410799,
+        -10690763975/1880347072,
+        +701980252875/199316789632,
+        -1453857185/822651844,
+        +69997945/29380423,
+    ])
+
+    def __init__(self, x, y, h, k0, k2, k3, k4, k5, k6, Y):
+
+        ydiff = Y - y
+        bspl  = k0 * h - ydiff
+        dh    = self.d * h
+
+        self.x  = x
+        self.h  = h
+        self.r0 = y
+        self.r1 = ydiff
+        self.r2 = bspl
+        self.r3 = ydiff - k6 * h - bspl
+        self.r4 = dh[0]*k0 + dh[2]*k2 + dh[3]*k3 + dh[4]*k4 + dh[5]*k5 + dh[6]*k6
+
+    def denseout(self, x):
+        s  = (x - self.x) / self.h
+        assert 0 <= s and s <= 1
+        s1 = 1 - s
+        return self.r0 + s*(self.r1 + s1*(self.r2 + s*(self.r3 + s1*self.r4)))
