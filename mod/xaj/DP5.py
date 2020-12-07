@@ -68,6 +68,11 @@ class DP5:
 
         return Y, E, (k0, k1, k2, k3, k4, k5, k6)
 
+    @staticmethod
+    def goodness(y, Y, E, atol=1e-4, rtol=1e-4): # may be xmapped
+        rerr = E / (atol + rtol * np.maximum(abs(y), abs(Y)))
+        return np.sqrt(np.mean(rerr * rerr))
+
 
 class DP5Output:
     """Dense Output of the DP5 Schemef"""
