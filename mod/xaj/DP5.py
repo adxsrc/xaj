@@ -37,7 +37,7 @@ class DP5:
             x=0, y=None, h=None,
             atol=1e-4, rtol=1e-4,
             alpha=None, beta=None,
-            safe=0.9, minscale = 0.2, maxscale = 10.0
+            safe=0.875, minscale=0.125, maxscale=8.0
     ): # may not be xmapped
 
         if beta is None:
@@ -111,7 +111,7 @@ class DP5:
         s = np.sign(X - self.x)
         h = X - self.x if self.h is None else s * abs(self.h)
         r = False
-        g = 1e-4
+        g = 0.125
 
         while self.x < X if s >= 0 else self.x > X:
             Y, E, k = self.step(h)
@@ -123,7 +123,6 @@ class DP5:
 
                 self.x += h
                 self.y  = Y
-                self.h  = h
                 self.k6 = k[6]
 
                 h *= self.scale(g, G, r)
@@ -135,6 +134,8 @@ class DP5:
 
                 h *= self.scale(1, G, r)
                 r  = True
+
+            self.h = h
 
             if verbose:
                 print(msg + f'x={self.x:.3f},{h:.3f}')
