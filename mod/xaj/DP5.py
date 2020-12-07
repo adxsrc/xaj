@@ -97,7 +97,7 @@ class DP5Output:
         self.r3 = ydiff - k[6] * h - bspl
         self.r4 = dh[0]*k[0] + dh[2]*k[2] + dh[3]*k[3] + dh[4]*k[4] + dh[5]*k[5] + dh[6]*k[6]
 
-    def denseout(self, x):
+    def __call__(self, x):
         s  = (x - self.x) / self.h
         assert 0 <= s and s <= 1
         s1 = 1 - s
