@@ -73,6 +73,24 @@ class DP5:
         rerr = E / (atol + rtol * np.maximum(abs(y), abs(Y)))
         return np.sqrt(np.mean(rerr * rerr))
 
+    @staticmethod
+    def scale(g, G, rejected):
+        beta     = 0.08
+        alpha    = 0.2 - beta * 0.75
+        safe     = 0.9
+        minscale = 0.2
+        maxscale = 10.0
+
+        if G == 0.0:
+            s = maxscale
+        else:
+            s = np.clip(safe * g**beta * G**-alpha, minscale, maxscale)
+
+        if rejected:
+            return np.min(np.array([s, 1.0]))
+        else:
+            return s
+
 
 class DP5Output:
     """Dense Output of the DP5 Schemef"""
