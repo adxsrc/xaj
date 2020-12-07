@@ -153,6 +153,6 @@ class DP5Output:
 
     def __call__(self, x):
         s  = (x - self.x) / self.h
-        assert 0 <= s and s <= 1
+        assert all(0 <= s) and all(s <= 1)
         s1 = 1 - s
         return self.r0 + s*(self.r1 + s1*(self.r2 + s*(self.r3 + s1*self.r4)))
