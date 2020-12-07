@@ -91,7 +91,7 @@ class DP5:
         else:
             return s
 
-    def preint(self, X, h=None):
+    def preint(self, X, h=None, verbose=False):
         s = np.sign(X - self.x)
         h = X - self.x if h is None else h
         r = False
@@ -102,6 +102,9 @@ class DP5:
 
             G = self.goodness(self.y, Y, E)
             if G <= 1.0:
+                if verbose:
+                    msg = f'Accepted: x,h = {self.x:.3f},{h:.3f} -> '
+
                 self.x += h
                 self.y  = Y
                 self.k6 = k[6]
@@ -110,8 +113,14 @@ class DP5:
                 r  = False
                 g  = np.max(np.array([G, 1e-4]))
             else:
+                if verbose:
+                    msg = f'Rejected: x,h = {self.x:.3f},{h:.3f} -> '
+
                 h *= self.scale(1, G, r)
                 r  = True
+
+            if verbose:
+                print(msg + f'x={self.x:.3f},{h:.3f}')
 
 
 class DP5Output:
