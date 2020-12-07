@@ -73,8 +73,8 @@ class DP5:
         self.h  = h
         self.k6 = None if y is None else self.rhs(x, y)
 
-        self.xs    = [self.x] if dense or full else None
-        self.ys    = [self.y] if full          else None
+        self._xs   = [self.x] if dense or full else None
+        self._ys   = [self.y] if full          else None
         self.dense = []       if dense         else None
 
     def step(self, h): # may be xmapped, would not change internal states
@@ -134,8 +134,8 @@ class DP5:
                 if verbose:
                     msg = f'Accepted: x,h = {self.x:.3f},{h:.3f} -> '
 
-                if self.xs    is not None: self.xs.append(self.x+h)
-                if self.ys    is not None: self.ys.append(Y)
+                if self._xs   is not None: self._xs.append(self.x+h)
+                if self._ys   is not None: self._ys.append(Y)
                 if self.dense is not None: self.dense.append(DP5Output(self.x, self.x+h, self.y, Y, k))
 
                 self.x += h
@@ -162,6 +162,14 @@ class DP5:
 
         if progress:
             pbar.close()
+
+    @property
+    def xs(self):
+        return np.array(self._xs)
+
+    @property
+    def ys(self):
+        return np.array(self._ys)
 
 
 class DP5Output:
