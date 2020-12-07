@@ -171,6 +171,15 @@ class DP5:
     def ys(self):
         return np.array(self._ys)
 
+    def __call__(self, xs):
+        if self.xs[1] > self.xs[0]:
+            def idxof(x): # closure of self.xs
+                return np.sum(self.xs <= x)-1
+        else:
+            def idxof(x): # closure of self.xs
+                return np.sum(-self.xs <= -x)-1
+        return np.array([self.dense[idxof(x)](x)for x in xs])
+
 
 class DP5Output:
     """Dense Output of the DP5 Schemef"""
@@ -202,6 +211,6 @@ class DP5Output:
 
     def __call__(self, x):
         s  = (x - self.x) / self.h
-        assert all(0 <= s) and all(s <= 1)
+        assert np.all(0 <= s) and np.all(s <= 1)
         s1 = 1 - s
         return self.r0 + s*(self.r1 + s1*(self.r2 + s*(self.r3 + s1*self.r4)))
