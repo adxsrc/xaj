@@ -105,11 +105,18 @@ class DP5:
         else:
             return s
 
-    def preint(self, X, verbose=False):
+    def preint(self, X, progress=True, verbose=None):
+        if verbose is None:
+            verobse = not progress
+
         s = np.sign(X - self.x)
         h = X - self.x if self.h is None else s * abs(self.h)
         r = False
         g = 0.125
+
+        if progress:
+            from tqdm import tqdm
+            pbar = tqdm(position=0, leave=True)
 
         while self.x < X if s >= 0 else self.x > X:
             Y, E, k = self.step(h)
@@ -135,8 +142,14 @@ class DP5:
 
             self.h = h
 
+            if progress:
+                pbar.set_postfix({'x':f'{self.x:.03g}', 'h':f'{h:.03g}'})
+                pbar.update(1)
             if verbose:
                 print(msg + f'x={self.x:.3f},{h:.3f}')
+
+        if progress:
+            pbar.close()
 
 
 class DP5Output:
