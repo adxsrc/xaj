@@ -37,14 +37,15 @@ class DP5:
             x=0, y=None, X=None, h=None,
             atol=1e-4, rtol=1e-4,
             alpha=None, beta=None,
-            safe=0.875, minscale=0.125, maxscale=8.0
+            safe=0.875, minscale=0.125, maxscale=8.0,
+            dense=True, full=None,
     ): # may not be xmapped
 
         # Required
         self.rhs = rhs
 
         # Internal states
-        self.reset(x, y, h)
+        self.reset(x, y, h, dense=dense, full=full)
 
         # Parameters
         if beta is None:
@@ -63,11 +64,18 @@ class DP5:
         if X is not None:
             self.preint(X)
 
-    def reset(self, x, y, h=None): # may be xmapped
+    def reset(self, x, y, h=None, dense=True, full=None): # may be xmapped
+        if full is None:
+            full = not dense
+
         self.x  = x
         self.y  = y
         self.h  = h
         self.k6 = None if y is None else self.rhs(x, y)
+
+        self.xs    = [self.x] if dense or full else None
+        self.ys    = [self.y] if full          else None
+        self.dense = []       if dense         else None
 
     def step(self, h): # may be xmapped, would not change internal states
         xch = self.x + self.c  * h
@@ -125,6 +133,10 @@ class DP5:
             if G <= 1.0:
                 if verbose:
                     msg = f'Accepted: x,h = {self.x:.3f},{h:.3f} -> '
+
+                if self.xs    is not None: self.xs.append(self.x+h)
+                if self.ys    is not None: self.ys.append(Y)
+                if self.dense is not None: self.dense.append(DP5Output(self.x, self.x+h, self.y, Y, k))
 
                 self.x += h
                 self.y  = Y
