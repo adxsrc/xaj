@@ -107,9 +107,9 @@ class DP5:
         else:
             return s
 
-    def preint(self, X, h=None, verbose=False):
+    def preint(self, X, verbose=False):
         s = np.sign(X - self.x)
-        h = X - self.x if h is None else h
+        h = X - self.x if self.h is None else s * abs(self.h)
         r = False
         g = 1e-4
 
@@ -123,6 +123,7 @@ class DP5:
 
                 self.x += h
                 self.y  = Y
+                self.h  = h
                 self.k6 = k[6]
 
                 h *= self.scale(g, G, r)
