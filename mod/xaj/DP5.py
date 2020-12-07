@@ -34,27 +34,24 @@ class DP5:
 
     def __init__(
             self, rhs,
-            x=0, y=None, h=None,
+            x=0, y=None, X=None, h=None,
             atol=1e-4, rtol=1e-4,
             alpha=None, beta=None,
             safe=0.875, minscale=0.125, maxscale=8.0
     ): # may not be xmapped
 
+        # Required
+        self.rhs = rhs
+
+        # Internal states
+        self.reset(x, y, h)
+
+        # Parameters
         if beta is None:
             beta = 0.08
         if alpha is None:
             alpha = 0.2 - beta * 0.75
 
-        # Required
-        self.rhs = rhs
-
-        # Internal states
-        self.x  = x
-        self.y  = y
-        self.h  = h
-        self.k6 = None if y is None else rhs(x, y)
-
-        # Parameters
         self.atol     = atol
         self.rtol     = rtol
         self.alpha    = alpha
@@ -63,11 +60,14 @@ class DP5:
         self.minscale = minscale
         self.maxscale = maxscale
 
+        if X is not None:
+            self.preint(X)
+
     def reset(self, x, y, h=None): # may be xmapped
         self.x  = x
         self.y  = y
         self.h  = h
-        self.k6 = self.rhs(x, y)
+        self.k6 = None if y is None else self.rhs(x, y)
 
     def step(self, h): # may be xmapped, would not change internal states
         xch = self.x + self.c  * h
@@ -96,12 +96,10 @@ class DP5:
         return np.sqrt(np.mean(rerr * rerr))
 
     def scale(self, g, G, rejected):
-
         if G == 0.0:
             s = self.maxscale
         else:
             s = np.clip(self.safe * g**self.beta * G**-self.alpha, self.minscale, self.maxscale)
-
         if rejected:
             return np.min(np.array([s, 1.0]))
         else:
