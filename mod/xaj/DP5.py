@@ -34,7 +34,7 @@ class DP5:
 
     def __init__(
             self, rhs,
-            x=0, y=None,
+            x=0, y=None, h=None,
             atol=1e-4, rtol=1e-4,
             alpha=None, beta=None,
             safe=0.9, minscale = 0.2, maxscale = 10.0
@@ -51,6 +51,7 @@ class DP5:
         # Internal states
         self.x  = x
         self.y  = y
+        self.h  = h
         self.k6 = None if y is None else rhs(x, y)
 
         # Parameters
@@ -62,9 +63,10 @@ class DP5:
         self.minscale = minscale
         self.maxscale = maxscale
 
-    def reset(self, x, y): # may be xmapped
+    def reset(self, x, y, h=None): # may be xmapped
         self.x  = x
         self.y  = y
+        self.h  = h
         self.k6 = self.rhs(x, y)
 
     def step(self, h): # may be xmapped, would not change internal states
