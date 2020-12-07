@@ -91,6 +91,28 @@ class DP5:
         else:
             return s
 
+    def preint(self, X, h=None):
+        s = np.sign(X - self.x)
+        h = X - self.x if h is None else h
+        r = False
+        g = 1e-4
+
+        while self.x < X if s >= 0 else self.x > X:
+            Y, E, k = self.step(h)
+
+            G = self.goodness(self.y, Y, E)
+            if G <= 1.0:
+                self.x += h
+                self.y  = Y
+                self.k6 = k[6]
+
+                h *= self.scale(g, G, r)
+                r  = False
+                g  = np.max(np.array([G, 1e-4]))
+            else:
+                h *= self.scale(1, G, r)
+                r  = True
+
 
 class DP5Output:
     """Dense Output of the DP5 Schemef"""
