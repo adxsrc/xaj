@@ -32,14 +32,35 @@ class DP5:
     a6 = np.array([35/384,      0,          500/1113,    125/192, -2187/6784,    11/84])
     e  = np.array([71/57600,    0,         -71/16695,    71/1920, -17253/339200, 22/525, -1/40])
 
-    def __init__(self, rhs, x=None, y=None): # may not be xmapped
+    def __init__(
+            self, rhs,
+            x=0, y=None,
+            atol=1e-4, rtol=1e-4,
+            alpha=None, beta=None,
+            safe=0.9, minscale = 0.2, maxscale = 10.0
+    ): # may not be xmapped
+
+        if beta is None:
+            beta = 0.08
+        if alpha is None:
+            alpha = 0.2 - beta * 0.75
+
         # Required
         self.rhs = rhs
 
         # Internal states
-        self.x  = 0 if x is None else x
+        self.x  = x
         self.y  = y
-        self.k6 = None if y is None else rhs(self.x, y)
+        self.k6 = None if y is None else rhs(x, y)
+
+        # Parameters
+        self.atol     = atol
+        self.rtol     = rtol
+        self.alpha    = alpha
+        self.beta     = beta
+        self.safe     = safe
+        self.minscale = minscale
+        self.maxscale = maxscale
 
     def reset(self, x, y): # may be xmapped
         self.x  = x
@@ -68,23 +89,16 @@ class DP5:
 
         return Y, E, (k0, k1, k2, k3, k4, k5, k6)
 
-    @staticmethod
-    def goodness(y, Y, E, atol=1e-4, rtol=1e-4): # may be xmapped
-        rerr = E / (atol + rtol * np.maximum(abs(y), abs(Y)))
+    def goodness(self, y, Y, E): # may be xmapped
+        rerr = E / (self.atol + self.rtol * np.maximum(abs(y), abs(Y)))
         return np.sqrt(np.mean(rerr * rerr))
 
-    @staticmethod
-    def scale(g, G, rejected):
-        beta     = 0.08
-        alpha    = 0.2 - beta * 0.75
-        safe     = 0.9
-        minscale = 0.2
-        maxscale = 10.0
+    def scale(self, g, G, rejected):
 
         if G == 0.0:
-            s = maxscale
+            s = self.maxscale
         else:
-            s = np.clip(safe * g**beta * G**-alpha, minscale, maxscale)
+            s = np.clip(self.safe * g**self.beta * G**-self.alpha, self.minscale, self.maxscale)
 
         if rejected:
             return np.min(np.array([s, 1.0]))
