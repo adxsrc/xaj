@@ -32,16 +32,16 @@ class DP5:
     a6 = np.array([35/384,      0,          500/1113,    125/192, -2187/6784,    11/84])
     e  = np.array([71/57600,    0,         -71/16695,    71/1920, -17253/339200, 22/525, -1/40])
 
-    def __init__(self, rhs):
+    def __init__(self, rhs, x=None, y=None, k6=None): # may not be xmapped
         # Required
         self.rhs = rhs
 
         # Internal states
-        self.x  = None
-        self.y  = None
-        self.k6 = None
+        self.x  = x
+        self.y  = y
+        self.k6 = k6
 
-    def setup(self, x, y): # may be xmapped
+    def reset(self, x, y): # may be xmapped
         self.x  = x
         self.y  = y
         self.k6 = self.rhs(x, y)
