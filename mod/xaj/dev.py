@@ -167,3 +167,21 @@ class ODEInt:
             self.data[s] = Sided(*self.algo, ic.x, ic.y, s * ic.h)
 
         self.data[s].extend(X)
+
+    @property
+    def xs(self):
+        xs = [self.data[0].x]
+        if self.data[ 1] is not None:
+            xs = xs + self.data[1].xs
+        if self.data[-1] is not None:
+            xs = self.data[-1].xs[::-1] + xs
+        return np.array(xs)
+
+    @property
+    def ys(self):
+        ys = [self.data[0].y]
+        if self.data[ 1] is not None:
+            ys = ys + self.data[1].ys
+        if self.data[-1] is not None:
+            ys = self.data[-1].ys[::-1] + ys
+        return np.array(ys)
