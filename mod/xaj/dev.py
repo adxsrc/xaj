@@ -150,6 +150,15 @@ class Sided:
                 self.h *= self.scale(1, R, not self.p)
                 self.p  = P
 
+    def evaluate(self, xs):
+        r = []
+        n = xs
+        for x, d in zip(self.xs, self.ds):
+            t, n = n[n <= x], n[n > x]
+            if len(t) > 0:
+                r.append(d(t))
+        return np.concatenate(r)
+
 
 class ODEInt:
 
