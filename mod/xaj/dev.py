@@ -17,6 +17,7 @@
 # along with XAJ.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from collections import namedtuple
 from jax import numpy as np
 
 
@@ -97,3 +98,54 @@ def NRscale(safe=0.875, alpha=None, beta=None, minscale=0.125, maxscale=8.0, ord
             return s
 
     return scale
+
+
+class Sided:
+
+    def __init__(self, step, dense, rerr, scale, x, y, h):
+        self.step  = step
+        self.dense = dense
+        self.rerr  = rerr
+        self.scale = scale
+
+        self.x  = x
+        self.y  = y
+        self.k  = None
+
+        self.h  = h
+        self.r  = 0.125
+        self.p  = True
+
+        self.xs = []
+        self.ys = []
+        self.ds = []
+
+    def done(self, Xt):
+        if self.h > 0:
+            return self.x >= Xt
+        else:
+            return self.x <= Xt
+
+    def extend(self, Xt):
+        while not self.done(Xt):
+            X       = self.x + self.h
+            Y, E, K = self.step(self.x, self.y, self.h, self.k)
+            R       = self.rerr(self.y, Y, E)
+            P       = R <= 1.0
+
+            if P: # pass
+                self.xs.append(X)
+                self.ys.append(Y)
+                self.ds.append(self.dense(self.x, X, self.y, Y, K))
+
+                self.x = X
+                self.y = Y
+                self.k = K
+
+                self.h *= self.scale(self.r, R, not self.p)
+                self.r  = max(R, 1e-4)
+                self.p  = P
+
+            else: # fail and retry
+                self.h *= self.scale(1, R, not self.p)
+                self.p  = P
