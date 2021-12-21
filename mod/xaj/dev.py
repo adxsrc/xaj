@@ -159,14 +159,14 @@ class ODEInt:
         self.algo  = [DP5(rhs), DP5dense, NR(atol=atol, rtol=rtol), NRscale()]
         self.data  = [self.IC(x, y, h), None, None]
 
-    def extend(self, X):
-        s = np.sign(X - self.data[0].x)
+    def extend(self, Xt):
+        s = np.sign(Xt - self.data[0].x)
 
         if self.data[s] is None:
             ic = self.data[0]
             self.data[s] = Sided(*self.algo, ic.x, ic.y, s * ic.h)
 
-        self.data[s].extend(X)
+        self.data[s].extend(Xt)
 
     @property
     def xs(self):
