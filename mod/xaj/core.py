@@ -17,87 +17,11 @@
 # along with XAJ.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from .DP5  import DP5, DP5dense
+from .ctrl import NR,  NRscale
+
 from collections import namedtuple
 from jax import numpy as np
-
-
-def DP5(rhs):
-
-    c = {0:    0.0,    1:     1/5,    2:    3/10,    3:   4/5,    4:     8/9,      5: 1.0,   6: 1.0 }
-    a = {
-      0:{                                                                                           },
-      1:{0:    1/5                                                                                  },
-      2:{0:    3/40,   1:     9/40                                                                  },
-      3:{0:   44/45,   1:-   56/15,   2:   32/9                                                     },
-      4:{0:19372/6561, 1:-25360/2187, 2:64448/6561,  3:-212/729                                     },
-      5:{0: 9017/3168, 1:-  355/33,   2:46732/5247,  3:  49/176,  4:- 5103/18656                    },
-      6:{0:   35/384,                 2:  500/1113,  3: 125/192,  4:- 2187/6784,   5:11/84          },
-    }
-    e = {0:   71/57600,               2:-  71/16695, 3:  71/1920, 4:-17253/339200, 5:22/525, 6:-1/40}
-
-    def step(x, y, h, k): # closure on rhs, may be xmapped
-        K = [] if k is None else k[-1:]
-        for i in range(len(K),7):
-            X = x + h * c[i]
-            Y = y + h * sum(v * K[j] for j, v in a[i].items())
-            K.append(rhs(X, Y))
-        E = h * sum(v * K[j] for j, v in e.items())
-        return Y, E, K
-
-    return step
-
-
-def DP5dense(x, X, y, Y, K):
-
-    d = {
-        0:-12715105075/11282082432,
-        2: 87487479700/32700410799,
-        3:-10690763975/1880347072,
-        4:701980252875/199316789632,
-        5:- 1453857185/822651844,
-        6:    69997945/29380423,
-    }
-    h    = X - x
-    dy   = Y - y
-    bspl = h * K[0] - dy
-    r    = (y, dy, bspl, dy - h * K[6] - bspl, h * sum(v * K[j] for j, v in d.items()))
-
-    def dense(xs): # closure oh x, h, and r
-        s = (np.array(xs)[..., np.newaxis] - x) / h
-        t = 1 - s
-        assert min(s) >= 0 and min(t) >= 0
-        return r[0] + s * (r[1] + t * (r[2] + s * (r[3] + t * r[4])))
-
-    return dense
-
-
-def NR(atol=1e-4, rtol=1e-4):
-
-    def rerr(y, Y, E): # closure on atol and rtol
-        r = E / (atol + rtol * np.maximum(abs(y), abs(Y)))
-        return np.sqrt(np.mean(r * r))
-
-    return rerr
-
-
-def NRscale(safe=0.875, alpha=None, beta=None, minscale=0.125, maxscale=8.0, order=5):
-
-    if beta  is None:
-        beta  = 0.4 / order
-    if alpha is None:
-        alpha = 1.0 / order - 0.75 * beta
-
-    def scale(g, G, rejected=False): # closure on safe, alpha, beta, minscale, maxscale
-        if G == 0.0:
-            s = maxscale
-        else:
-            s = np.clip(safe * g**beta * G**-alpha, minscale, maxscale)
-        if rejected:
-            return min(s, 1.0)
-        else:
-            return s
-
-    return scale
 
 
 class Sided:
@@ -162,7 +86,7 @@ class Sided:
         return ys if self.h > 0 else ys[::-1,...]
 
 
-class ODEInt:
+class odeint:
 
     IC = namedtuple('IC', ['x', 'y', 'h'])
 

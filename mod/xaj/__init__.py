@@ -17,5 +17,4 @@
 # along with XAJ.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from .RK4 import RK4
-from .DP5 import DP5
+from .core import odeint
