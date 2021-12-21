@@ -172,7 +172,7 @@ class ODEInt:
         self.data  = [self.IC(x, y, h), None, None]
 
     def extend(self, Xt):
-        s = np.sign(Xt - self.data[0].x)
+        s = int(np.sign(Xt - self.data[0].x))
 
         if self.data[s] is None:
             ic = self.data[0]
@@ -203,3 +203,8 @@ class ODEInt:
             self.data[-1].evaluate(xs[xs <  self.data[0].x]),
             self.data[ 1].evaluate(xs[xs >= self.data[0].x]),
         ])
+
+    def __call__(self, xs):
+        self.extend(max(xs))
+        self.extend(min(xs))
+        return self.evaluate(xs)
