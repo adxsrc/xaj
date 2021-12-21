@@ -156,6 +156,7 @@ class ODEInt:
     IC = namedtuple('IC', ['x', 'y', 'h'])
 
     def __init__(self, rhs, x, y, h, atol=1e-4, rtol=1e-4):
+        assert h > 0
         self.algo  = [DP5(rhs), DP5dense, NR(atol=atol, rtol=rtol), NRscale()]
         self.data  = [self.IC(x, y, h), None, None]
 
