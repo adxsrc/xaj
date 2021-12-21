@@ -44,3 +44,12 @@ def DP5(rhs):
         return Y, E, K
 
     return step
+
+
+def NR(atol=1e-4, rtol=1e-4):
+
+    def rerr(y, Y, E): # closure on atol and rtol
+        r = E / (atol + rtol * np.maximum(abs(y), abs(Y)))
+        return np.sqrt(np.mean(r * r))
+
+    return rerr
