@@ -151,13 +151,15 @@ class Sided:
                 self.p  = P
 
     def evaluate(self, xs):
-        r = []
-        n = xs
+        l = []
+        n = xs if self.h > 0 else xs[::-1]
         for x, d in zip(self.xs, self.ds):
-            t, n = n[n <= x], n[n > x]
-            if len(t) > 0:
-                r.append(d(t))
-        return np.concatenate(r)
+            m = n <= x if self.h > 0 else n >= x
+            if m.sum() > 0:
+                l.append(d(n[m]))
+                n = n[~m]
+        ys = np.concatenate(l)
+        return ys if self.h > 0 else ys[::-1,...]
 
 
 class ODEInt:
@@ -195,3 +197,9 @@ class ODEInt:
         if self.data[-1] is not None:
             ys = self.data[-1].ys[::-1] + ys
         return np.array(ys)
+
+    def evaluate(self, xs):
+        return np.concatenate([
+            self.data[-1].evaluate(xs[xs <  self.data[0].x]),
+            self.data[ 1].evaluate(xs[xs >= self.data[0].x]),
+        ])
