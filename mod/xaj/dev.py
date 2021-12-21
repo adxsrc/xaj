@@ -46,7 +46,7 @@ def DP5(rhs):
     return step
 
 
-def DP5dense(x0, x1, y0, y1, k):
+def DP5dense(x, X, y, Y, K):
 
     d = {
         0:-12715105075/11282082432,
@@ -56,15 +56,13 @@ def DP5dense(x0, x1, y0, y1, k):
         5:- 1453857185/822651844,
         6:    69997945/29380423,
     }
+    h    = X - x
+    dy   = Y - y
+    bspl = h * K[0] - dy
+    r    = (y, dy, bspl, dy - h * K[6] - bspl, h * sum(v * K[j] for j, v in d.items()))
 
-    h    = x1 - x0
-    dy   = y1 - y0
-    bspl = k[0] * h - dy
-    r    = [y0, dy, bspl, dy - k[6] * h - bspl, h * sum(v * k[j] for j, v in d.items())]
-
-    def dense(x): # closure oh x0, h, and r
-        x = np.array(x)[..., np.newaxis]
-        s = (x - x0) / h
+    def dense(xs): # closure oh x, h, and r
+        s = (np.array(xs)[..., np.newaxis] - x) / h
         t = 1 - s
         assert min(s) >= 0 and min(t) >= 0
         return r[0] + s * (r[1] + t * (r[2] + s * (r[3] + t * r[4])))
