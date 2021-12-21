@@ -149,3 +149,21 @@ class Sided:
             else: # fail and retry
                 self.h *= self.scale(1, R, not self.p)
                 self.p  = P
+
+
+class ODEInt:
+
+    IC = namedtuple('IC', ['x', 'y', 'h'])
+
+    def __init__(self, rhs, x, y, h, atol=1e-4, rtol=1e-4):
+        self.algo  = [DP5(rhs), DP5dense, NR(atol=atol, rtol=rtol), NRscale()]
+        self.data  = [self.IC(x, y, h), None, None]
+
+    def extend(self, X):
+        s = np.sign(X - self.data[0].x)
+
+        if self.data[s] is None:
+            ic = self.data[0]
+            self.data[s] = Sided(*self.algo, ic.x, ic.y, s * ic.h)
+
+        self.data[s].extend(X)
