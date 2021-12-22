@@ -60,9 +60,10 @@ def DP5dense(x, X, y, Y, K):
     dy   = Y - y
     bspl = h * K[0] - dy
     r    = (y, dy, bspl, dy - h * K[6] - bspl, h * sum(v * K[j] for j, v in d.items()))
+    cast = (...,) + (np.newaxis,) * y.ndim
 
-    def dense(xs): # closure oh x, h, and r
-        s = (np.array(xs)[..., np.newaxis] - x) / h
+    def dense(xs): # closure oh x, h, r, and cast
+        s = (np.array(xs)[cast] - x) / h
         t = 1 - s
         assert min(s) >= 0 and min(t) >= 0
         return r[0] + s * (r[1] + t * (r[2] + s * (r[3] + t * r[4])))
