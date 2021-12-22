@@ -97,12 +97,11 @@ class odeint:
 
     def extend(self, Xt):
         s = int(np.sign(Xt - self.data[0].x))
-
-        if self.data[s] is None:
-            ic = self.data[0]
-            self.data[s] = Sided(*self.algo, ic.x, ic.y, s * ic.h)
-
-        self.data[s].extend(Xt)
+        if s != 0:
+            if self.data[s] is None:
+                ic = self.data[0]
+                self.data[s] = Sided(*self.algo, ic.x, ic.y, s * ic.h)
+            self.data[s].extend(Xt)
 
     @property
     def xs(self):
