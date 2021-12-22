@@ -66,12 +66,12 @@ class Sided:
                 self.y = Y
                 self.k = K
 
-                self.h *= self.scale(self.r, R, not self.p)
+                self.h *= self.scale(self.r, R, self.p)
                 self.r  = max(R, 1e-4)
                 self.p  = P
 
             else: # fail and retry
-                self.h *= self.scale(1, R, not self.p)
+                self.h *= self.scale(1, R, self.p)
                 self.p  = P
 
     def evaluate(self, xs):

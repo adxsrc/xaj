@@ -36,14 +36,14 @@ def NRscale(safe=0.875, alpha=None, beta=None, minscale=0.125, maxscale=8.0, ord
     if alpha is None:
         alpha = 1.0 / order - 0.75 * beta
 
-    def scale(g, G, rejected=False): # closure on safe, alpha, beta, minscale, maxscale
+    def scale(g, G, passed=True): # closure on safe, alpha, beta, minscale, maxscale
         if G == 0.0:
             s = maxscale
         else:
             s = np.clip(safe * g**beta * G**-alpha, minscale, maxscale)
-        if rejected:
-            return min(s, 1.0)
-        else:
+        if passed:
             return s
+        else:
+            return min(s, 1.0)
 
     return scale
