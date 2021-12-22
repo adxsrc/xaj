@@ -122,10 +122,14 @@ class odeint:
         return np.array(ys)
 
     def evaluate(self, xs):
-        return np.concatenate([
-            self.data[-1].evaluate(xs[xs <  self.data[0].x]),
-            self.data[ 1].evaluate(xs[xs >= self.data[0].x]),
-        ])
+        l = [self.data[0].y[np.newaxis, ...]] * (xs == self.data[0].x).sum()
+        xm = xs[xs < self.data[0].x]
+        if len(xm) > 0:
+            l = [self.data[-1].evaluate(xm)] + l
+        xp = xs[xs > self.data[0].x]
+        if len(xp) > 0:
+            l = l + [self.data[ 1].evaluate(xp)]
+        return np.concatenate(l)
 
     def __call__(self, xs):
         self.extend(max(xs))
