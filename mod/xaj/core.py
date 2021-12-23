@@ -103,6 +103,8 @@ class Sided:
             if m.sum() > 0:
                 l.append(d(n[m]))
                 n = n[~m]
+        if len(n) > 0:
+            l.append(np.full([len(n)]+list(self.y.shape), np.nan))
         ys = np.concatenate(l)
         return ys if self.h > 0 else ys[::-1,...]
 
