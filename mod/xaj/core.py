@@ -73,8 +73,11 @@ class Sided:
         while not self.done(Xt):
             X       = self.x + self.h
             Y, R, K = self.step(self.x, self.y, self.h, self.k)
-            P       = R <= 1.0
+            R       = np.max(R)
+            if np.isneginf(R):
+                break
 
+            P = R <= 1.0
             if P: # pass
                 self.xs.append(X)
                 self.ys.append(Y)
@@ -108,17 +111,22 @@ class odeint:
 
     IC = namedtuple('IC', ['x', 'y', 'h'])
 
-    def __init__(self, rhs, x, y, h, atol=1e-4, rtol=1e-4, dtype=np.float32):
+    def __init__(
+        self, rhs, x, y, h,
+        filter=None,
+        atol=1e-4, rtol=1e-4, dtype=np.float32,
+    ):
         assert h > 0
-        self.algo  = [Step(rhs), Dense, RErr(atol=atol, rtol=rtol), Scale()]
-        self.data  = [self.IC(x, np.array(y, dtype=dtype), h), None, None]
+        self.algo   = [Step(rhs), Dense, RErr(atol=atol, rtol=rtol), Scale()]
+        self.data   = [self.IC(x, np.array(y, dtype=dtype), h), None, None]
+        self.filter = filter
 
     def extend(self, Xt):
         s = int(np.sign(Xt - self.data[0].x))
         if s != 0:
             if self.data[s] is None:
                 ic = self.data[0]
-                self.data[s] = Sided(*self.algo, ic.x, ic.y, s * ic.h)
+                self.data[s] = Sided(*self.algo, ic.x, ic.y, s * ic.h, self.filter)
             self.data[s].extend(Xt)
 
     @property
