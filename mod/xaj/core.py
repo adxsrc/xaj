@@ -26,7 +26,7 @@ from jax import lax
 from collections import namedtuple
 
 
-def wrapper(step, rerr):
+def wrapper(step, rerr, mask=None):
 
     def do(x, y, h, k):
         Y, E, K = step(x, y, h, k)
@@ -36,16 +36,18 @@ def wrapper(step, rerr):
     def skip(x, y, h, k):
         return np.full(y.shape, np.nan), -np.inf, [np.full(y.shape, np.nan)] * step.nk
 
-    def masked_step(m, x, y, h, k):
-        return lax.cond(m, do, skip, x, y, h, k)
-
-    return masked_step
+    if mask is None:
+        return do
+    else:
+        def masked_do(x, y, h, k):
+            return lax.cond(mask(x, y), do, skip, x, y, h, k)
+        return masked_do
 
 
 class Sided:
 
-    def __init__(self, step, dense, rerr, scale, x, y, h):
-        self.step  = wrapper(step, rerr)
+    def __init__(self, step, dense, rerr, scale, x, y, h, mask=None):
+        self.step  = wrapper(step, rerr, mask)
         self.dense = dense
         self.scale = scale
 
@@ -70,7 +72,7 @@ class Sided:
     def extend(self, Xt):
         while not self.done(Xt):
             X       = self.x + self.h
-            Y, R, K = self.step(True, self.x, self.y, self.h, self.k)
+            Y, R, K = self.step(self.x, self.y, self.h, self.k)
             P       = R <= 1.0
 
             if P: # pass
