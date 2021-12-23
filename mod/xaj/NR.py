@@ -20,7 +20,7 @@
 from jax import numpy as np
 
 
-def NR(atol=1e-4, rtol=1e-4):
+def RErr(atol=1e-4, rtol=1e-4):
 
     def rerr(y, Y, E): # closure on atol and rtol
         r = E / (atol + rtol * np.maximum(abs(y), abs(Y)))
@@ -29,7 +29,7 @@ def NR(atol=1e-4, rtol=1e-4):
     return rerr
 
 
-def NRscale(safe=0.875, alpha=None, beta=None, minscale=0.125, maxscale=8.0, order=5):
+def Scale(safe=0.875, alpha=None, beta=None, minscale=0.125, maxscale=8.0, order=5):
 
     if beta  is None:
         beta  = 0.4 / order

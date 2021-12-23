@@ -17,8 +17,8 @@
 # along with XAJ.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from .DP5  import DP5, DP5dense
-from .ctrl import NR,  NRscale
+from .DP5 import Step, Dense
+from .NR  import RErr, Scale
 
 from collections import namedtuple
 from jax import numpy as np
@@ -92,7 +92,7 @@ class odeint:
 
     def __init__(self, rhs, x, y, h, atol=1e-4, rtol=1e-4):
         assert h > 0
-        self.algo  = [DP5(rhs), DP5dense, NR(atol=atol, rtol=rtol), NRscale()]
+        self.algo  = [Step(rhs), Dense, RErr(atol=atol, rtol=rtol), Scale()]
         self.data  = [self.IC(x, np.array(y), h), None, None]
 
     def extend(self, Xt):

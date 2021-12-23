@@ -20,7 +20,7 @@
 from jax import numpy as np
 
 
-def DP5(rhs):
+def Step(rhs):
 
     c = {0:    0.0,    1:     1/5,    2:    3/10,    3:   4/5,    4:     8/9,      5: 1.0,   6: 1.0 }
     a = {
@@ -46,7 +46,7 @@ def DP5(rhs):
     return step
 
 
-def DP5dense(x, X, y, Y, K):
+def Dense(x, X, y, Y, K):
 
     d = {
         0:-12715105075/11282082432,
