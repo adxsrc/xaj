@@ -17,13 +17,14 @@
 # along with XAJ.  If not, see <http://www.gnu.org/licenses/>.
 
 
-def RK4(rhs):
+def Step(rhs):
 
-    def integrate(state, dt): # closure on rhs
-        k1 = dt * rhs(state           )
-        k2 = dt * rhs(state + 0.5 * k1)
-        k3 = dt * rhs(state + 0.5 * k2)
-        k4 = dt * rhs(state +       k3)
-        return state + k1 / 6 + k2 / 3 + k3 / 3 + k4 / 6
+    def step(x, y, h, k): # closure on rhs
+        K1 = h * rhs(y           )
+        K2 = h * rhs(y + 0.5 * K1)
+        K3 = h * rhs(y + 0.5 * K2)
+        K4 = h * rhs(y +       K3)
+        Y  = y + K1 / 6 + K2 / 3 + K3 / 3 + K4 / 6
+        return Y, None, [K1, K2, K3, K4]
 
-    return integrate
+    return step
