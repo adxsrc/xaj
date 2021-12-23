@@ -33,14 +33,15 @@ def wrapper(step, rerr, filter=None):
         R       = rerr(y, Y, E)
         return Y, R, K
 
-    def skip(x, y, h, k):
-        return np.full(y.shape, np.nan), -np.inf, [np.full(y.shape, np.nan)] * step.nk
+    def masked_do(x, y, h, k):
+        m       = filter(x, y)
+        Y, E, K = step(x, y, h / m, k)
+        R       = rerr(y, Y, E)
+        return Y, np.select([m], [R], -np.inf), K
 
     if filter is None:
         return do
     else:
-        def masked_do(x, y, h, k):
-            return lax.cond(filter(x, y), do, skip, x, y, h, k)
         return masked_do
 
 
@@ -115,11 +116,14 @@ class odeint:
 
     def __init__(
         self, rhs, x, y, h,
-        filter=None,
+        eqax=None, filter=None,
         atol=1e-4, rtol=1e-4, dtype=np.float32,
     ):
         assert h > 0
-        self.algo   = [Step(rhs), Dense, RErr(atol=atol, rtol=rtol), Scale()]
+        if eqax is None:
+            eqax = list(range(rhs.ndim if hasattr(rhs, 'ndim') else 0))
+
+        self.algo   = [Step(rhs), Dense, RErr(eqax, atol=atol, rtol=rtol), Scale()]
         self.data   = [self.IC(x, np.array(y, dtype=dtype), h), None, None]
         self.filter = filter
 
