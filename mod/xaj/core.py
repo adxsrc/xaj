@@ -34,7 +34,7 @@ def wrapper(step, rerr):
         return Y, R, K
 
     def skip(x, y, h, k):
-        return np.full(y.shape, np.nan), -np.inf, [np.full(y.shape, np.nan)] * 7
+        return np.full(y.shape, np.nan), -np.inf, [np.full(y.shape, np.nan)] * step.nk
 
     def masked_step(m, x, y, h, k):
         return lax.cond(m, do, skip, x, y, h, k)
