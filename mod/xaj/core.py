@@ -20,16 +20,33 @@
 from .DP5 import Step, Dense
 from .NR  import RErr, Scale
 
-from collections import namedtuple
 from jax import numpy as np
+from jax import lax
+
+from collections import namedtuple
+
+
+def wrapper(step, rerr):
+
+    def do(x, y, h, k):
+        Y, E, K = step(x, y, h, k)
+        R       = rerr(y, Y, E)
+        return Y, R, K
+
+    def skip(x, y, h, k):
+        return np.full(y.shape, np.nan), -np.inf, [np.full(y.shape, np.nan)] * 7
+
+    def masked_step(m, x, y, h, k):
+        return lax.cond(m, do, skip, x, y, h, k)
+
+    return masked_step
 
 
 class Sided:
 
     def __init__(self, step, dense, rerr, scale, x, y, h):
-        self.step  = step
+        self.step  = wrapper(step, rerr)
         self.dense = dense
-        self.rerr  = rerr
         self.scale = scale
 
         self.x  = x
@@ -53,8 +70,7 @@ class Sided:
     def extend(self, Xt):
         while not self.done(Xt):
             X       = self.x + self.h
-            Y, E, K = self.step(self.x, self.y, self.h, self.k)
-            R       = self.rerr(self.y, Y, E)
+            Y, R, K = self.step(True, self.x, self.y, self.h, self.k)
             P       = R <= 1.0
 
             if P: # pass
@@ -90,10 +106,10 @@ class odeint:
 
     IC = namedtuple('IC', ['x', 'y', 'h'])
 
-    def __init__(self, rhs, x, y, h, atol=1e-4, rtol=1e-4):
+    def __init__(self, rhs, x, y, h, atol=1e-4, rtol=1e-4, dtype=np.float32):
         assert h > 0
         self.algo  = [Step(rhs), Dense, RErr(atol=atol, rtol=rtol), Scale()]
-        self.data  = [self.IC(x, np.array(y), h), None, None]
+        self.data  = [self.IC(x, np.array(y, dtype=dtype), h), None, None]
 
     def extend(self, Xt):
         s = int(np.sign(Xt - self.data[0].x))
