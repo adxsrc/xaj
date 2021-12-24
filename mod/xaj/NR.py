@@ -20,11 +20,11 @@
 from jax import numpy as np
 
 
-def RErr(axis, atol=1e-4, rtol=1e-4):
+def RErr(eqax=[0], atol=1e-4, rtol=1e-4):
 
     def rerr(y, Y, E): # closure on atol and rtol
         r = E / (atol + rtol * np.maximum(abs(y), abs(Y)))
-        return np.sqrt(np.mean(r * r, axis=axis))
+        return np.sqrt(np.mean(r * r, axis=eqax))
 
     return rerr
 
