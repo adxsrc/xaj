@@ -77,11 +77,7 @@ class Sided:
     def extend(self, Xt):
         while not self.done(Xt) and abs(self.h) > 1e-3:
             X       = self.x + self.h
-            print(f'{self.x} -> {X}, {self.h}')
-
             Y, R, K = self.step(self.x, self.y, self.h, self.k)
-            print(R)
-
             R       = np.max(R)
             if not np.isfinite(R):
                 break
