@@ -26,7 +26,7 @@ from jax import lax
 from collections import namedtuple
 
 
-def wrapper(step, rerr, filter=None):
+def wrapper(step, rerr, filter=None, slices=None):
 
     def do(x, y, h, k):
         Y, E, K = step(x, y, h, k)
@@ -34,8 +34,12 @@ def wrapper(step, rerr, filter=None):
         return Y, R, K
 
     def masked_do(x, y, h, k):
-        m       = filter(x, y)
-        Y, E, K = step(x, y, h / m, k)
+        m = filter(x, y)
+        if slices is None:
+            hm = h / m
+        else:
+            hm = h / m[slices]
+        Y, E, K = step(x, y, hm, k)
         R       = rerr(y, Y, E)
         return Y, np.select([m], [R], -np.inf), K
 
@@ -47,8 +51,8 @@ def wrapper(step, rerr, filter=None):
 
 class Sided:
 
-    def __init__(self, step, dense, rerr, scale, x, y, h, filter=None):
-        self.step  = wrapper(step, rerr, filter)
+    def __init__(self, step, dense, rerr, scale, x, y, h, filter=None, slices=None):
+        self.step  = wrapper(step, rerr, filter, slices)
         self.dense = dense
         self.scale = scale
 
@@ -71,11 +75,15 @@ class Sided:
             return self.x <= Xt
 
     def extend(self, Xt):
-        while not self.done(Xt):
+        while not self.done(Xt) and abs(self.h) > 1e-3:
             X       = self.x + self.h
+            print(f'{self.x} -> {X}, {self.h}')
+
             Y, R, K = self.step(self.x, self.y, self.h, self.k)
+            print(R)
+
             R       = np.max(R)
-            if np.isneginf(R):
+            if not np.isfinite(R):
                 break
 
             P = R <= 1.0
@@ -117,22 +125,31 @@ class odeint:
     def __init__(
         self, rhs, x, y, h,
         eqax=None, filter=None,
-        atol=1e-4, rtol=1e-4, dtype=np.float32,
+        atol=1e-3, rtol=1e-3, dtype=np.float32,
     ):
         assert h > 0
         if eqax is None:
-            eqax = list(range(rhs.ndim if hasattr(rhs, 'ndim') else 0))
+            eqax   = list(range(rhs.ndim if hasattr(rhs, 'ndim') else 1))
+            slices = None
+        else:
+            from jax.experimental.maps import xmap
+            iax    = {i:i for i   in range(y.ndim) if i not in eqax}
+            oax    = {o:i for o,i in enumerate(iax.values())}
+            slices = tuple(None if i in eqax else slice(None) for i in range(y.ndim))
+            rhs    = xmap(rhs,    in_axes=({}, iax), out_axes=iax)
+            filter = xmap(filter, in_axes=({}, iax), out_axes=oax)
 
         self.algo   = [Step(rhs), Dense, RErr(eqax, atol=atol, rtol=rtol), Scale()]
         self.data   = [self.IC(x, np.array(y, dtype=dtype), h), None, None]
         self.filter = filter
+        self.slices = slices
 
     def extend(self, Xt):
         s = int(np.sign(Xt - self.data[0].x))
         if s != 0:
             if self.data[s] is None:
                 ic = self.data[0]
-                self.data[s] = Sided(*self.algo, ic.x, ic.y, s * ic.h, self.filter)
+                self.data[s] = Sided(*self.algo, ic.x, ic.y, s * ic.h, self.filter, self.slices)
             self.data[s].extend(Xt)
 
     @property
