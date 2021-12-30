@@ -17,8 +17,6 @@
 # along with XAJ.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from .DP5  import Init, Step, Dense
-from .pace import Pace
 from .trek import Trek
 
 from jax import numpy as np
@@ -27,65 +25,58 @@ from collections import namedtuple
 
 class odeint:
 
-    IC = namedtuple('IC', ['x', 'y', 'h', 'k'])
+    IC = namedtuple('IC', ['x', 'y', 'h'])
 
-    def __init__(
-        self, rhs, x, y, h,
-        eqax=None, filter=None,
-        atol=1e-3, rtol=1e-3, dtype=np.float32,
+    def __init__(self,
+        rhs, x, y, h,
+        # eqax=None, filter=None,
+        dtype=np.float32,
+        **kwargs,
     ):
         assert h > 0
-        if eqax is None:
-            eqax   = list(range(rhs.ndim if hasattr(rhs, 'ndim') else 1))
-            slices = None
-        else:
-            from jax.experimental.maps import xmap
-            iax    = {i:i for i   in range(y.ndim) if i not in eqax}
-            oax    = {o:i for o,i in enumerate(iax.values())}
-            slices = tuple(None if i in eqax else slice(None) for i in range(y.ndim))
-            rhs    = xmap(rhs,    in_axes=({}, iax), out_axes=iax)
-            filter = xmap(filter, in_axes=({}, iax), out_axes=oax)
+        # if eqax is None:
+        #     eqax   = list(range(rhs.ndim if hasattr(rhs, 'ndim') else 1))
+        #     slices = None
+        # else:
+        #     from jax.experimental.maps import xmap
+        #     iax    = {i:i for i   in range(y.ndim) if i not in eqax}
+        #     oax    = {o:i for o,i in enumerate(iax.values())}
+        #     slices = tuple(None if i in eqax else slice(None) for i in range(y.ndim))
+        #     rhs    = xmap(rhs,    in_axes=({}, iax), out_axes=iax)
+        #     filter = xmap(filter, in_axes=({}, iax), out_axes=oax)
 
-        y = np.array(y, dtype=dtype)
-
-        init  = Init(rhs)
-        step  = Step(rhs)
-        dense = Dense
-
-        self.step  = step
-        self.dense = dense
-        self.scale = Scale(atol=atol, rtol=rtol)
-        self.data  = [self.IC(x, y, h, init(x, y)), None, None]
+        self.rhs    = rhs
+        self.data   = [self.IC(x, np.array(y, dtype=dtype), h), None, None]
+        self.kwargs = kwargs
 
     def extend(self, Xt):
         s = int(np.sign(Xt - self.data[0].x))
         if s != 0:
             if self.data[s] is None:
-                ic   = self.data[0]
-                pace = Pace(self.step, s * ic.h)
-                self.data[s] = Trek(pace, self.dense, ic.x, ic.y, ic.k)
+                ic = self.data[0]
+                self.data[s] = Trek(self.rhs, ic.x, ic.y, s * ic.h, **self.kwargs)
             self.data[s].extend(Xt)
 
     @property
     def xs(self):
         xs = [self.data[0].x]
         if self.data[-1] is not None:
-            xs = self.data[-1].xs[::-1] + xs
+            xs = self.data[-1].xs[:0:-1] + xs
         if self.data[ 1] is not None:
-            xs = xs + self.data[1].xs
+            xs = xs + self.data[1].xs[1::]
         return np.array(xs)
 
     @property
     def ys(self):
         ys = [self.data[0].y]
         if self.data[-1] is not None:
-            ys = self.data[-1].ys[::-1] + ys
+            ys = self.data[-1].ys[:0:-1] + ys
         if self.data[ 1] is not None:
-            ys = ys + self.data[1].ys
+            ys = ys + self.data[1].ys[1::]
         return np.array(ys)
 
     def evaluate(self, xs):
-        l = [self.data[0].y[np.newaxis, ...]] * (xs == self.data[0].x).sum()
+        l = [self.data[0].y[np.newaxis,...]] * (xs == self.data[0].x).sum()
         xm = xs[xs < self.data[0].x]
         if len(xm) > 0:
             l = [self.data[-1].evaluate(xm)] + l
