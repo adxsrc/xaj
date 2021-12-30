@@ -59,18 +59,24 @@ class Pace:
         annoyance.
 
     """
-    def __init__(self, step, h, filter=None, n=8, r=0.125):
+    def __init__(self, step, h, filter=None, n=8, r=0.125, rmin=1e-4):
         rerr  = RErr()
         scale = Scale()
 
         # TODO: xmap rerr and filter
 
+        # Internal methods
         self.step  = wrapper(step, rerr, filter)
         self.scale = scale
-        self.n     = n
-        self.h     = h
-        self.p     = True
-        self.r     = r
+
+        # Constant settings
+        self.n    = n
+        self.rmin = rmin
+
+        # Varying states
+        self.h = h
+        self.p = True
+        self.r = r
 
     def __call__(self, x, y, k):
         for _ in range(self.n):
@@ -82,5 +88,5 @@ class Pace:
             self.p  = P
             if P:
                 break
-        self.r = max(R, 1e-4) # unlike self.p, self.r is only updated if pass
+        self.r = max(R, self.rmin) # unlike self.p, self.r is only updated if pass
         return X, Y, K
