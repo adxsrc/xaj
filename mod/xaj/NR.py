@@ -21,7 +21,23 @@ from jax import numpy as np
 
 
 def RErr(eqax=[0], atol=1e-4, rtol=1e-4):
+    """Turn some parameters into a error function
 
+    This function takes some setings such as `atol` and `rtol` and
+    return a callable that comptues a "relative error".
+
+    Args:
+        eqax:  Axes for the root-mean-sqaure to run on.
+        atol:  Absolute tolerance.
+        rtol:  Relative tolerance.
+
+    Returns:
+        rerr:  A callable to compute the relative error from
+               initial state `y`, final state `Y`, and estimated error
+               `E`.  `y`, `Y`, and `E` can all be pytree with same
+               signature.
+
+    """
     def rerr(y, Y, E): # closure on atol and rtol
         r = E / (atol + rtol * np.maximum(abs(y), abs(Y)))
         return np.sqrt(np.mean(r * r, axis=eqax))
@@ -30,7 +46,25 @@ def RErr(eqax=[0], atol=1e-4, rtol=1e-4):
 
 
 def Scale(safe=0.875, alpha=None, beta=None, minscale=0.125, maxscale=8.0, order=5):
+    """Turn some parameters into a scaling function
 
+    This function takes some setings such as `safe`, `minscale`, and
+    `maxscale` and return a callable that computes a "scaling factor"
+    for time step control.  The formulation is based on the Numerical
+    Recipe, with some specific choice on the default parameters.
+
+    Args:
+        TODO...
+
+    Returns:
+        scale: A callable to compute the scaling factor for time step
+               control.  The formulation is based on the Numerical
+               Recipe.  It takes the last and current relative errors
+               `g` and `G`, and propose a scaling `s` for the next
+               step.  `g`, `G`, and `s` can be pytree with the same
+               signature.
+
+    """
     if beta  is None:
         beta  = 0.4 / order
     if alpha is None:
