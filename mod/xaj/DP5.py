@@ -21,12 +21,11 @@ from jax import numpy as np
 
 
 def Init(rhs):
-    """Turn the RHS of a system of ODEs to a DP5 initial information
+    """Turn the RHS of a system of ODEs to a DP5 initializer
 
     This function takes the right-hand-side (RHS) of a system of
-    ordinary differential equations (ODEs) into the initial
-    information for a 5th-order Runge-Kutta Dormand-Prince (DP5)
-    stepper.
+    ordinary differential equations (ODEs) into an initializer for a
+    5th-order Runge-Kutta Dormand-Prince (DP5) stepper.
 
     Args:
         rhs:  Callable that takes exactly 2 arguments and return 1
@@ -47,7 +46,7 @@ def Init(rhs):
 
     """
     def init(x, y): # closure oh rhs, may be xmapped
-        nan = np.full(y.shape, np.nan)
+        nan = np.full(y.shape, np.nan) # TODO: make it work for generic pytrees
         return [nan] * 6 + [rhs(x, y)]
 
     return init
@@ -92,10 +91,10 @@ def Step(rhs):
     e = {0:   71/57600,               2:-  71/16695, 3:  71/1920, 4:-17253/339200, 5:22/525, 6:-1/40}
 
     def step(x, y, h, k): # closure on rhs, may be xmapped
-        K = [] if k is None else k[-1:]
+        K = [] if k is None else k[-1:] # check if we need to "compile" this out for performance
         for i in range(len(K),7):
             X = x + h * c[i]
-            Y = y + h * sum(v * K[j] for j, v in a[i].items())
+            Y = y + h * sum(v * K[j] for j, v in a[i].items()) # TODO: make it work for generic pytrees
             K.append(rhs(X, Y))
         E = h * sum(v * K[j] for j, v in e.items())
         return Y, E, K
@@ -114,7 +113,7 @@ def Dense(x, X, y, Y, K):
         6:    69997945/29380423,
     }
     h    = X - x
-    dy   = Y - y
+    dy   = Y - y # TODO: make it work for generic pytrees
     bspl = h * K[0] - dy
     r    = (y, dy, bspl, dy - h * K[6] - bspl, h * sum(v * K[j] for j, v in d.items()))
     cast = (...,) + (np.newaxis,) * y.ndim
