@@ -20,6 +20,39 @@
 from jax import numpy as np
 
 
+def Init(rhs):
+    """Turn the RHS of a system of ODEs to a DP5 initial information
+
+    This function takes the right-hand-side (RHS) of a system of
+    ordinary differential equations (ODEs) into the initial
+    information for a 5th-order Runge-Kutta Dormand-Prince (DP5)
+    stepper.
+
+    Args:
+        rhs:  Callable that takes exactly 2 arguments and return 1
+              argument, i.e. K0 = rhs(x, y).  Here, x is a scalar, y
+              is a pytree (see JAX documentation), and K0 is a pytree
+              with exact same signature as y.
+
+    Returns:
+        init: Callable that takes exactly 3 arguments and return 1
+              arguments, i.e., K = step(x, y).  Here, x is scalars; y
+              and Y are pytrees with exact same signature.  And K is a
+              list of the same pytree.
+
+    Both the input `rhs` and output `init` should be xmappable by JAX.
+    When `rhs` or/and `init` is/are xmapped, then `x` is allowed to be
+    JAX DeviceArray's with shapes that are broadcastable to the
+    xmapped axes.
+
+    """
+    def init(x, y): # closure oh rhs, may be xmapped
+        nan = np.full(y.shape, np.nan)
+        return [nan] * 6 + [rhs(x, y)]
+
+    return init
+
+
 def Step(rhs):
     """Turn the RHS of a system of ODEs to a DP5 stepper
 
