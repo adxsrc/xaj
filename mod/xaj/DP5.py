@@ -100,8 +100,6 @@ def Step(rhs):
         E = h * sum(v * K[j] for j, v in e.items())
         return Y, E, K
 
-    step.nk = 7
-
     return step
 
 
