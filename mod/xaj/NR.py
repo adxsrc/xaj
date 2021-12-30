@@ -39,7 +39,7 @@ def RErr(eqax=[0], atol=1e-4, rtol=1e-4):
 
     """
     def rerr(y, Y, E): # closure on atol and rtol
-        r = E / (atol + rtol * np.maximum(abs(y), abs(Y)))
+        r = E / (atol + rtol * np.maximum(abs(y), abs(Y))) # TODO: make it work for generic pytrees
         return np.sqrt(np.mean(r * r, axis=eqax))
 
     return rerr
@@ -70,11 +70,12 @@ def Scale(safe=0.875, alpha=None, beta=None, minscale=0.125, maxscale=8.0, order
     if alpha is None:
         alpha = 1.0 / order - 0.75 * beta
 
-    def scale(g, G, passed=True): # closure on safe, alpha, beta, minscale, maxscale
-        if G == 0.0:
+    def scale(r, R, passed=True): # closure on safe, alpha, beta, minscale, maxscale, xmappable
+        # TODO: make it work for generic pytrees
+        if R == 0.0:
             s = maxscale
         else:
-            s = np.clip(safe * g**beta * G**-alpha, minscale, maxscale)
+            s = np.clip(safe * r**beta * R**-alpha, minscale, maxscale)
         if passed:
             return s
         else:
