@@ -24,20 +24,20 @@ def Step(rhs):
     """Turn the RHS of a system of ODEs to a DP5 stepper
 
     This function takes the right-hand-side (RHS) of a system of
-    ordinary differential equations (ODEs) into a Runge-Kutta
-    Dormand-Prince 5th-order stepper.
+    ordinary differential equations (ODEs) into a 5th-order
+    Runge-Kutta Dormand-Prince (DP5) stepper.
 
     Args:
         rhs:  Callable that takes exactly 2 arguments and return 1
-              argument, i.e. k = rhs(x, y).  Here, x is a scalar, y is
-              a pytree (see JAX documentation), and k is a pytree with
-              exact same signature as y.
+              argument, i.e. K0 = rhs(x, y).  Here, x is a scalar, y
+              is a pytree (see JAX documentation), and K0 is a pytree
+              with exact same signature as y.
 
     Returns:
         step: Callable that takes exactly 4 arguments and return 3
               arguments, i.e., Y, E, K = step(x, y, h, k).  Here, x
-              and h are scalars; y, Y, E; are all pytree with exact
-              same signatures.  And k and K are list of the same
+              and h are scalars; y, Y, E are all pytrees with exact
+              same signature.  And k and K are list of the same
               pytree.
 
     Both the input `rhs` and output `step` should be xmappable by JAX.
