@@ -22,7 +22,7 @@ from .NR import RErr, Scale
 from jax import numpy as np
 
 
-def wrapper(step, rerr, filter=None, slices=None):
+def wrapper(step, rerr, filter=None):
 
     def do(x, y, h, k):
         Y, E, K = step(x, y, h, k)
@@ -30,12 +30,8 @@ def wrapper(step, rerr, filter=None, slices=None):
         return Y, R, K
 
     def masked_do(x, y, h, k):
-        m = filter(x, y)
-        if slices is None:
-            hm = h / m
-        else:
-            hm = h / m[slices]
-        Y, E, K = step(x, y, hm, k)
+        m       = filter(x, y)
+        Y, E, K = step(x, y, h / m, k)
         R       = rerr(y, Y, E)
         return Y, np.select([m], [R], -np.inf), K
 
@@ -58,9 +54,14 @@ class Pace:
         annoyance.
 
     """
-    def __init__(self, step, h, filter, slices, n=8, r=0.125):
-        self.step  = wrapper(step, RErr(), filter, slices)
-        self.scale = Scale()
+    def __init__(self, step, h, filter=None, n=8, r=0.125):
+        rerr  = RErr()
+        scale = Scale()
+
+        # TODO: xmap rerr and filter
+
+        self.step  = wrapper(step, rerr, filter)
+        self.scale = scale
         self.n     = n
         self.h     = h
         self.p     = True
