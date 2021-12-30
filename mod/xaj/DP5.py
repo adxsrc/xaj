@@ -91,7 +91,7 @@ def Step(rhs):
     e = {0:   71/57600,               2:-  71/16695, 3:  71/1920, 4:-17253/339200, 5:22/525, 6:-1/40}
 
     def step(x, y, h, k): # closure on rhs, may be xmapped
-        K = [] if k is None else k[-1:] # check if we need to "compile" this out for performance
+        K = [] if k is None else k[-1:] # TODO: check if we need to "compile" this out for performance
         for i in range(len(K),7):
             X = x + h * c[i]
             Y = y + h * sum(v * K[j] for j, v in a[i].items()) # TODO: make it work for generic pytrees
@@ -103,7 +103,31 @@ def Step(rhs):
 
 
 def Dense(x, X, y, Y, K):
+    """Dense output for DP5
 
+    This function takes outputs of a PD5 step and return a callable
+    for interpolation.
+
+    Args:
+        x:     Initial independent variable, scalar or JAX DeviceArray
+               broadcastable to the xmapped shape.
+        X:     Final independent variable, scalar or JAX DeviceArray
+               broadcastable to the xmapped shape.
+        y:     Initial state, which can be a pytree.
+        Y:     Final state, same pytree as `y`.
+        K:     List of same pytree with length 7 for generate the
+               interpolation coefficients.
+
+    Returns:
+        dense: Callable that takes exactly a list of values of
+               independent variable and return interpolated pytree.
+
+    The inputs can be output of xmapped functions, or we can xmap
+    `dense` to perform the interpolation.  When this happens, then
+    `xs` is allowed to be multi-dimensional JAX DeviceArray with
+    shapes that are broadcastable to the xmapped axes.
+
+    """
     d = {
         0:-12715105075/11282082432,
         2: 87487479700/32700410799,
