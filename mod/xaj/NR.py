@@ -20,14 +20,14 @@
 from jax import numpy as np
 
 
-def RErr(eqax=[0], atol=1e-4, rtol=1e-4):
+def RErr(axis=None, atol=1e-4, rtol=1e-4):
     """Turn some parameters into a error function
 
     This function takes some setings such as `atol` and `rtol` and
     return a callable that comptues a "relative error".
 
     Args:
-        eqax:  Axes for the root-mean-sqaure to run on.
+        axis:  Axes for the root-mean-sqaure to run on.
         atol:  Absolute tolerance.
         rtol:  Relative tolerance.
 
@@ -38,9 +38,9 @@ def RErr(eqax=[0], atol=1e-4, rtol=1e-4):
                signature.
 
     """
-    def rerr(y, Y, E): # closure on atol and rtol
+    def rerr(y, Y, E): # closure on axis, atol, and rtol
         r = E / (atol + rtol * np.maximum(abs(y), abs(Y))) # TODO: make it work for generic pytrees
-        return np.sqrt(np.mean(r * r, axis=eqax))
+        return np.sqrt(np.mean(r * r, axis=axis))
 
     return rerr
 

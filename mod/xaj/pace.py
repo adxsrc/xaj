@@ -59,8 +59,12 @@ class Pace:
         annoyance.
 
     """
-    def __init__(self, step, h, filter=None, n=8, r=0.125, rmin=1e-4, **kwargs):
-        rerr  = RErr()
+    def __init__(self, step, h, filter=None,
+        n=8, r=0.125, rmin=1e-4,
+        eqax=None, atol=1e-4, rtol=1e-4,
+        **kwargs,
+    ):
+        rerr  = RErr(eqax, atol, rtol)
         scale = Scale(**kwargs)
 
         # TODO: xmap rerr and filter
