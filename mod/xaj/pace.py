@@ -22,6 +22,11 @@ from .NR import RErr, Scale
 from jax import numpy as np
 
 
+def nanmask(m, v):
+    """Mask a value or an array `v` with `nan` according to `m`"""
+    return np.select([m], [v], np.nan)
+
+
 def wrapper(step, rerr, filter=None):
 
     def do(x, y, h, k):
@@ -31,9 +36,9 @@ def wrapper(step, rerr, filter=None):
 
     def masked_do(x, y, h, k):
         m       = filter(x, y)
-        Y, E, K = step(x, y, h / m, k)
+        Y, E, K = step(x, y, nanmask(m, h), k)
         R       = rerr(y, Y, E)
-        return Y, np.select([m], [R], -np.inf), K
+        return Y, R, K
 
     if filter is None:
         return do
@@ -71,7 +76,7 @@ class Pace:
         for _ in range(self.n):
             Y, R, K = self.step(x, y, self.h, k)
             X       = x + self.h
-            R       = np.max(R) # xaj supports only global step for now
+            R       = np.nanmax(R) # xaj supports only global step for now
             P       = R <= 1.0
             self.h *= self.scale(self.r, R, self.p, P)
             self.p  = P
