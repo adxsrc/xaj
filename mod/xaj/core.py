@@ -17,12 +17,12 @@
 # along with XAJ.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from .DP5 import Step, Dense
-from .NR  import RErr, Scale
+from .DP5  import Init, Step, Dense
+from .NR   import RErr, Scale
+from .pace import Pace
+from .trek import Trek
 
 from jax import numpy as np
-from jax import lax
-
 from collections import namedtuple
 
 
@@ -49,74 +49,9 @@ def wrapper(step, rerr, filter=None, slices=None):
         return masked_do
 
 
-class Sided:
-
-    def __init__(self, step, dense, rerr, scale, x, y, h, filter=None, slices=None):
-        self.step  = wrapper(step, rerr, filter, slices)
-        self.dense = dense
-        self.scale = scale
-
-        self.x  = x
-        self.y  = y
-        self.k  = None
-
-        self.h  = h
-        self.r  = 0.125
-        self.p  = True
-
-        self.xs = []
-        self.ys = []
-        self.ds = []
-
-    def done(self, Xt):
-        if self.h > 0:
-            return self.x >= Xt
-        else:
-            return self.x <= Xt
-
-    def extend(self, Xt):
-        while not self.done(Xt) and abs(self.h) > 1e-3:
-            X       = self.x + self.h
-            Y, R, K = self.step(self.x, self.y, self.h, self.k)
-            R       = np.max(R)
-            if not np.isfinite(R):
-                break
-
-            P = R <= 1.0
-            if P: # pass
-                self.xs.append(X)
-                self.ys.append(Y)
-                self.ds.append(self.dense(self.x, X, self.y, Y, K))
-
-                self.x = X
-                self.y = Y
-                self.k = K
-
-                self.h *= self.scale(self.r, R, self.p)
-                self.r  = max(R, 1e-4)
-                self.p  = P
-
-            else: # fail and retry
-                self.h *= self.scale(1, R, self.p)
-                self.p  = P
-
-    def evaluate(self, xs):
-        l = []
-        n = xs if self.h > 0 else xs[::-1]
-        for x, d in zip(self.xs, self.ds):
-            m = n <= x if self.h > 0 else n >= x
-            if m.sum() > 0:
-                l.append(d(n[m]))
-                n = n[~m]
-        if len(n) > 0:
-            l.append(np.full([len(n)]+list(self.y.shape), np.nan))
-        ys = np.concatenate(l)
-        return ys if self.h > 0 else ys[::-1,...]
-
-
 class odeint:
 
-    IC = namedtuple('IC', ['x', 'y', 'h'])
+    IC = namedtuple('IC', ['x', 'y', 'h', 'k'])
 
     def __init__(
         self, rhs, x, y, h,
@@ -135,17 +70,20 @@ class odeint:
             rhs    = xmap(rhs,    in_axes=({}, iax), out_axes=iax)
             filter = xmap(filter, in_axes=({}, iax), out_axes=oax)
 
-        self.algo   = [Step(rhs), Dense, RErr(eqax, atol=atol, rtol=rtol), Scale()]
-        self.data   = [self.IC(x, np.array(y, dtype=dtype), h), None, None]
-        self.filter = filter
-        self.slices = slices
+        y = np.array(y, dtype=dtype)
+
+        self.step  = wrapper(Step(rhs), RErr(), filter=filter, slices=slices)
+        self.dense = Dense
+        self.scale = Scale(atol=atol, rtol=rtol)
+        self.data  = [self.IC(x, y, h, Init(rhs)(x, y)), None, None]
 
     def extend(self, Xt):
         s = int(np.sign(Xt - self.data[0].x))
         if s != 0:
             if self.data[s] is None:
-                ic = self.data[0]
-                self.data[s] = Sided(*self.algo, ic.x, ic.y, s * ic.h, self.filter, self.slices)
+                ic   = self.data[0]
+                pace = Pace(self.step, self.scale, s * ic.h)
+                self.data[s] = Trek(pace, self.dense, ic.x, ic.y, ic.k)
             self.data[s].extend(Xt)
 
     @property
