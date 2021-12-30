@@ -18,35 +18,11 @@
 
 
 from .DP5  import Init, Step, Dense
-from .NR   import RErr, Scale
 from .pace import Pace
 from .trek import Trek
 
 from jax import numpy as np
 from collections import namedtuple
-
-
-def wrapper(step, rerr, filter=None, slices=None):
-
-    def do(x, y, h, k):
-        Y, E, K = step(x, y, h, k)
-        R       = rerr(y, Y, E)
-        return Y, R, K
-
-    def masked_do(x, y, h, k):
-        m = filter(x, y)
-        if slices is None:
-            hm = h / m
-        else:
-            hm = h / m[slices]
-        Y, E, K = step(x, y, hm, k)
-        R       = rerr(y, Y, E)
-        return Y, np.select([m], [R], -np.inf), K
-
-    if filter is None:
-        return do
-    else:
-        return masked_do
 
 
 class odeint:
@@ -72,17 +48,21 @@ class odeint:
 
         y = np.array(y, dtype=dtype)
 
-        self.step  = wrapper(Step(rhs), RErr(), filter=filter, slices=slices)
-        self.dense = Dense
+        init  = Init(rhs)
+        step  = Step(rhs)
+        dense = Dense
+
+        self.step  = step
+        self.dense = dense
         self.scale = Scale(atol=atol, rtol=rtol)
-        self.data  = [self.IC(x, y, h, Init(rhs)(x, y)), None, None]
+        self.data  = [self.IC(x, y, h, init(x, y)), None, None]
 
     def extend(self, Xt):
         s = int(np.sign(Xt - self.data[0].x))
         if s != 0:
             if self.data[s] is None:
                 ic   = self.data[0]
-                pace = Pace(self.step, self.scale, s * ic.h)
+                pace = Pace(self.step, s * ic.h)
                 self.data[s] = Trek(pace, self.dense, ic.x, ic.y, ic.k)
             self.data[s].extend(Xt)
 
