@@ -17,6 +17,9 @@
 # along with XAJ.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from .DP5  import Init, Step, Dense
+from .pace import Pace
+
 from jax import numpy as np
 
 
@@ -32,13 +35,13 @@ class Trek:
         Trek (verb): go on a long arduous journey, typically on foot.
 
     """
-    def __init__(self, pace, dense, x, y, k):
-        self.pace  = pace
-        self.dense = dense
-        self.ds = [ ] # self.ds always has one less element than xs and ys
-        self.xs = [x]
-        self.ys = [y]
-        self.k  =  k
+    def __init__(self, rhs, x, y, h):
+        self.pace  = Pace(Step(rhs), h)
+        self.dense = Dense
+        self.ds    = [ ] # self.ds always has one less element than xs and ys
+        self.xs    = [x]
+        self.ys    = [y]
+        self.k     = Init(rhs)(x, y)
 
     def done(self, Xt):
         if self.pace.h > 0:
