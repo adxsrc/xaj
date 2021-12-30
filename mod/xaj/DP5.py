@@ -28,16 +28,16 @@ def Init(rhs):
     5th-order Runge-Kutta Dormand-Prince (DP5) stepper.
 
     Args:
-        rhs:  Callable that takes exactly 2 arguments and return 1
-              argument, i.e. K0 = rhs(x, y).  Here, x is a scalar, y
-              is a pytree (see JAX documentation), and K0 is a pytree
-              with exact same signature as y.
+        rhs:   Callable that takes exactly 2 arguments and return 1
+               argument, i.e. K0 = rhs(x, y).  Here, x is a scalar, y
+               is a pytree (see JAX documentation), and K0 is a pytree
+               with exact same signature as y.
 
     Returns:
-        init: Callable that takes exactly 3 arguments and return 1
-              arguments, i.e., K = step(x, y).  Here, x is scalars; y
-              and Y are pytrees with exact same signature.  And K is a
-              list of the same pytree.
+        init:  Callable that takes exactly 3 arguments and return 1
+               arguments, i.e., K = step(x, y).  Here, x is scalars; y
+               and Y are pytrees with exact same signature.  And K is
+               a list of the same pytree.
 
     Both the input `rhs` and output `init` should be xmappable by JAX.
     When `rhs` or/and `init` is/are xmapped, then `x` is allowed to be
@@ -60,17 +60,17 @@ def Step(rhs):
     Runge-Kutta Dormand-Prince (DP5) stepper.
 
     Args:
-        rhs:  Callable that takes exactly 2 arguments and return 1
-              argument, i.e. K0 = rhs(x, y).  Here, x is a scalar, y
-              is a pytree (see JAX documentation), and K0 is a pytree
-              with exact same signature as y.
+        rhs:   Callable that takes exactly 2 arguments and return 1
+               argument, i.e. K0 = rhs(x, y).  Here, x is a scalar, y
+               is a pytree (see JAX documentation), and K0 is a pytree
+               with exact same signature as y.
 
     Returns:
-        step: Callable that takes exactly 4 arguments and return 3
-              arguments, i.e., Y, E, K = step(x, y, h, k).  Here, x
-              and h are scalars; y, Y, E are all pytrees with exact
-              same signature.  And k and K are list of the same
-              pytree.
+        step:  Callable that takes exactly 4 arguments and return 3
+               arguments, i.e., Y, E, K = step(x, y, h, k).  Here, x
+               and h are scalars; y, Y, E are all pytrees with exact
+               same signature.  And k and K are list of the same
+               pytree.
 
     Both the input `rhs` and output `step` should be xmappable by JAX.
     When `rhs` or/and `step` is/are xmapped, then `x` and `h` are
@@ -140,9 +140,9 @@ def Dense(x, X, y, Y, K):
     dy   = Y - y # TODO: make it work for generic pytrees
     bspl = h * K[0] - dy
     r    = (y, dy, bspl, dy - h * K[6] - bspl, h * sum(v * K[j] for j, v in d.items()))
-    cast = (...,) + (np.newaxis,) * y.ndim
+    cast = (...,) + (np.newaxis,) * y.ndim # TODO: make it work for generic pytrees
 
-    def dense(xs): # closure oh x, h, r, and cast
+    def dense(xs): # closure oh x, h, r, and cast, may be xmapped
         s = (np.array(xs)[cast] - x) / h
         t = 1 - s
         assert min(s) >= 0 and min(t) >= 0
