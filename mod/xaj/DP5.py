@@ -21,7 +21,31 @@ from jax import numpy as np
 
 
 def Step(rhs):
+    """Turn the RHS of a system of ODEs to a DP5 stepper
 
+    This function takes the right-hand-side (RHS) of a system of
+    ordinary differential equations (ODEs) into a Runge-Kutta
+    Dormand-Prince 5th-order stepper.
+
+    Args:
+        rhs:  Callable that takes exactly 2 arguments and return 1
+              argument, i.e. k = rhs(x, y).  Here, x is a scalar, y is
+              a pytree (see JAX documentation), and k is a pytree with
+              exact same signature as y.
+
+    Returns:
+        step: Callable that takes exactly 4 arguments and return 3
+              arguments, i.e., Y, E, K = step(x, y, h, k).  Here, x
+              and h are scalars; y, Y, E; are all pytree with exact
+              same signatures.  And k and K are list of the same
+              pytree.
+
+    Both the input `rhs` and output `step` should be xmappable by JAX.
+    When `rhs` or/and `step` is/are xmapped, then `x` and `h` are
+    allowed to be JAX DeviceArray's with shapes that are broadcastable
+    to the xmapped axes.
+
+    """
     c = {0:    0.0,    1:     1/5,    2:    3/10,    3:   4/5,    4:     8/9,      5: 1.0,   6: 1.0 }
     a = {
       0:{                                                                                           },
