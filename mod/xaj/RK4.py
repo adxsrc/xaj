@@ -26,8 +26,8 @@ def Step(rhs):
 
     Args:
         rhs:  Callable that takes exactly 2 arguments and return 1
-              argument, i.e. k = rhs(x, y).  Here, x is a scalar, y
-              is a pytree (see JAX documentation), and k is a pytree
+              argument, i.e. K0 = rhs(x, y).  Here, x is a scalar, y
+              is a pytree (see JAX documentation), and K0 is a pytree
               with exact same signature as y.
 
     Returns:
@@ -44,11 +44,11 @@ def Step(rhs):
 
     """
     def step(x, y, h, k): # closure on rhs
-        K1 = h * rhs(y           )
-        K2 = h * rhs(y + 0.5 * K1)
-        K3 = h * rhs(y + 0.5 * K2)
-        K4 = h * rhs(y +       K3)
-        Y  = y + K1 / 6 + K2 / 3 + K3 / 3 + K4 / 6
-        return Y, None, [K1, K2, K3, K4]
+        hK0 = h * rhs(x,           y            )
+        hK1 = h * rhs(x + 0.5 * h, y + 0.5 * hK0)
+        hK2 = h * rhs(x + 0.5 * h, y + 0.5 * hK1)
+        hK3 = h * rhs(x +       h, y +       hK2)
+        Y   = y + hK0 / 6 + hK1 / 3 + hK2 / 3 + hK3 / 6
+        return Y, None, None
 
     return step
