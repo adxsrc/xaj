@@ -29,24 +29,22 @@ class odeint:
 
     def __init__(self,
         rhs, x, y, h,
-        # eqax=None, filter=None,
+        # filter=None,
         dtype=np.float32,
         **kwargs,
     ):
         assert h > 0
-        # if eqax is None:
-        #     eqax   = list(range(rhs.ndim if hasattr(rhs, 'ndim') else 1))
-        #     slices = None
-        # else:
-        #     from jax.experimental.maps import xmap
-        #     iax    = {i:i for i   in range(y.ndim) if i not in eqax}
-        #     oax    = {o:i for o,i in enumerate(iax.values())}
-        #     slices = tuple(None if i in eqax else slice(None) for i in range(y.ndim))
-        #     rhs    = xmap(rhs,    in_axes=({}, iax), out_axes=iax)
-        #     filter = xmap(filter, in_axes=({}, iax), out_axes=oax)
+
+        y = np.array(y, dtype=dtype)
+
+        if 'eqax' in kwargs:
+            from jax.experimental.maps import xmap
+            fax = {i:i for   i in range(y.ndim) if i not in kwargs['eqax']}
+            sax = {o:i for o,i in enumerate(fax.values())}
+            rhs = xmap(rhs, in_axes=({}, fax), out_axes=fax)
 
         self.rhs    = rhs
-        self.data   = [self.IC(x, np.array(y, dtype=dtype), h), None, None]
+        self.data   = [self.IC(x, y, h), None, None]
         self.kwargs = kwargs
 
     def extend(self, Xt):
