@@ -35,7 +35,9 @@ class odeint:
     ):
         assert h > 0
 
+        x = np.array(x, dtype=dtype)
         y = np.array(y, dtype=dtype)
+        h = np.array(h, dtype=dtype)
 
         if eqax is not None:
             from jax.experimental.maps import xmap
