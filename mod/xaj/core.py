@@ -29,7 +29,6 @@ class odeint:
 
     def __init__(self,
         rhs, x, y, h,
-        # filter=None,
         dtype=np.float32,
         **kwargs,
     ):

@@ -59,7 +59,8 @@ class Pace:
         annoyance.
 
     """
-    def __init__(self, step, h, filter=None,
+    def __init__(self,
+        step, h, filter=None,
         n=8, r=0.125, rmin=1e-4,
         eqax=None, atol=1e-4, rtol=1e-4,
         **kwargs,
@@ -87,10 +88,13 @@ class Pace:
             Y, R, K = self.step(x, y, self.h, k)
             X       = x + self.h
             R       = np.nanmax(R) # xaj supports only global step for now
+            if np.isnan(R):
+                break # do not update `self.h` and `self.p`
+
             P       = R <= 1.0
             self.h *= self.scale(self.r, R, self.p, P)
             self.p  = P
             if P:
                 break
-        self.r = max(R, self.rmin) # unlike self.p, self.r is only updated if pass
+        self.r = max(R, self.rmin) # unlike self.p, self.r is only updated if pass or R == nan
         return X, Y, K
