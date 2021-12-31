@@ -83,6 +83,12 @@ class Pace:
         self.p = True
         self.r = r
 
+    def sign(self):
+        if np.isnan(self.r):
+            return 0
+        else:
+            return int(np.sign(self.h))
+
     def __call__(self, x, y, k):
         for _ in range(self.n):
             Y, R, K = self.step(x, y, self.h, k)

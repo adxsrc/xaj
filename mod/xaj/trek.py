@@ -44,10 +44,8 @@ class Trek:
         self.k     = Init(rhs)(x, y)
 
     def done(self, Xt):
-        if self.pace.h > 0:
-            return self.xs[-1] >= Xt
-        else:
-            return self.xs[-1] <= Xt
+        s = self.pace.sign()
+        return s * self.xs[-1] >= s * Xt
 
     def extend(self, Xt):
         while not self.done(Xt):
