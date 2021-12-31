@@ -29,6 +29,7 @@ class odeint:
 
     def __init__(self,
         rhs, x, y, h,
+        eqax=None, filter=None,
         dtype=np.float32,
         **kwargs,
     ):
@@ -36,11 +37,18 @@ class odeint:
 
         y = np.array(y, dtype=dtype)
 
-        if 'eqax' in kwargs:
+        if eqax is not None:
             from jax.experimental.maps import xmap
-            fax = {i:i for   i in range(y.ndim) if i not in kwargs['eqax']}
+            fax = {i:i for   i in range(y.ndim) if i not in eqax}
             sax = {o:i for o,i in enumerate(fax.values())}
             rhs = xmap(rhs, in_axes=({}, fax), out_axes=fax)
+            if filter is not None:
+                xmf    = xmap(filter, in_axes=({}, fax), out_axes=sax)
+                slices = tuple(None if i in eqax else slice(None) for i in range(y.ndim))
+                filter = lambda x, y: xmf(x, y)[slices] # closure on xmf and slices
+
+        kwargs['eqax'  ] = eqax
+        kwargs['filter'] = filter
 
         self.rhs    = rhs
         self.data   = [self.IC(x, y, h), None, None]
