@@ -20,6 +20,7 @@
 from .NR import RErr, Scale
 
 from jax import numpy as np
+from jax import jit
 
 
 def nanmask(m, v):
@@ -30,20 +31,22 @@ def nanmask(m, v):
 def wrapper(step, rerr, filter=None):
 
     def do(x, y, h, k):
+        print('jit(do); input:', x, y, h, k) # will be jitted away
         Y, E, K = step(x, y, h, k)
         R       = rerr(y, Y, E)
         return Y, R, K
 
     def masked_do(x, y, h, k):
+        print('jit(masked_do); input:', x, y, h, k) # will be jitted away
         m       = filter(x, y)
         Y, E, K = step(x, y, nanmask(m, h), k)
         R       = rerr(y, Y, E)
         return Y, R, K
 
     if filter is None:
-        return do
+        return jit(do)
     else:
-        return masked_do
+        return jit(masked_do)
 
 
 class Pace:
