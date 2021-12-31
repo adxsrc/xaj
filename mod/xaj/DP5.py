@@ -46,8 +46,8 @@ def Init(rhs):
 
     """
     def init(x, y): # closure oh rhs, may be xmapped
-        nan = np.full(y.shape, np.nan) # TODO: make it work for generic pytrees
-        return [nan] * 6 + [rhs(x, y)]
+        k = rhs(x, y)
+        return [k * np.nan] * 6 + [k]
 
     return init
 
