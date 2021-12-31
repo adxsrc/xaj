@@ -71,7 +71,6 @@ def Scale(safe=0.875, alpha=None, beta=None, minscale=0.125, maxscale=8.0, order
         alpha = 1.0 / order - 0.75 * beta
 
     def scale(r, R, p, P): # closure on safe, alpha, beta, minscale, maxscale, xmappable
-        # TODO: make it work for generic pytrees
         if R == 0.0:
             s = maxscale
         else:

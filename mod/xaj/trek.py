@@ -44,7 +44,6 @@ class Trek:
         self.ys    = [y]
         self.k     = Init(rhs)(x, y)
 
-
     def done(self, Xt):
         s = self.pace.sign()
         return s * self.xs[-1] >= s * Xt
@@ -76,7 +75,6 @@ class Trek:
 
         if pbar is not None:
             pbar.close()
-
 
     def evaluate(self, xs):
         f = self.pace.h > 0

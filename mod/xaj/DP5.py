@@ -91,7 +91,7 @@ def Step(rhs):
     e = {0:   71/57600,               2:-  71/16695, 3:  71/1920, 4:-17253/339200, 5:22/525, 6:-1/40}
 
     def step(x, y, h, k): # closure on rhs, may be xmapped
-        K = [] if k is None else k[-1:] # TODO: check if we need to "compile" this out for performance
+        K = [] if k is None else k[-1:]
         for i in range(len(K),7):
             X = x + h * c[i]
             Y = y + h * sum(v * K[j] for j, v in a[i].items()) # TODO: make it work for generic pytrees
@@ -140,7 +140,7 @@ def Dense(x, X, y, Y, K):
     dy   = Y - y # TODO: make it work for generic pytrees
     bspl = h * K[0] - dy
     r    = (y, dy, bspl, dy - h * K[6] - bspl, h * sum(v * K[j] for j, v in d.items()))
-    cast = (...,) + (np.newaxis,) * y.ndim # TODO: make it work for generic pytrees
+    cast = (...,) + (np.newaxis,) * y.ndim
 
     def dense(xs): # closure oh x, h, r, and cast, may be xmapped
         s = (np.array(xs)[cast] - x) / h

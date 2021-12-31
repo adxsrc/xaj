@@ -71,8 +71,6 @@ class Pace:
         rerr  = RErr(eqax, atol, rtol)
         scale = Scale(**kwargs)
 
-        # TODO: xmap rerr and filter
-
         # Internal methods
         self.step  = wrapper(step, rerr, filter)
         self.scale = scale
@@ -105,5 +103,6 @@ class Pace:
             self.p  = P
             if P:
                 break
+
         self.r = max(R, self.rmin) # unlike self.p, self.r is only updated if pass or R == nan
         return X, Y, K
