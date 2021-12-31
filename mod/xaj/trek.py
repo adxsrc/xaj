@@ -50,6 +50,8 @@ class Trek:
     def extend(self, Xt):
         while not self.done(Xt):
             X, Y, K = self.pace(self.xs[-1], self.ys[-1], self.k)
+            if self.pace.sign() == 0:
+                break
             self.ds.append(self.dense(self.xs[-1], X, self.ys[-1], Y, K))
             self.xs.append(X)
             self.ys.append(Y)
