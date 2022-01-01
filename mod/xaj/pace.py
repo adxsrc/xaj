@@ -44,9 +44,9 @@ def wrapper(step, rerr, filter=None):
         return Y, R, K
 
     if filter is None:
-        return jit(do)
+        return do
     else:
-        return jit(masked_do)
+        return masked_do
 
 
 class Pace:
@@ -72,8 +72,8 @@ class Pace:
         scale = Scale(**kwargs)
 
         # Internal methods
-        self.step  = wrapper(step, rerr, filter)
-        self.hlim  = hlim
+        self.step  = jit(wrapper(step, rerr, filter))
+        self.hlim  = jit(hlim) if hlim else hlim
         self.scale = scale
 
         # Constant settings
