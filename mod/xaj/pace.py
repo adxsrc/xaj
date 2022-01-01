@@ -63,7 +63,7 @@ class Pace:
 
     """
     def __init__(self,
-        step, h, filter=None,
+        step, h, hlim=None, filter=None,
         n=8, r=0.125, rmin=1e-4,
         eqax=None, atol=1e-4, rtol=1e-4,
         **kwargs,
@@ -73,6 +73,7 @@ class Pace:
 
         # Internal methods
         self.step  = wrapper(step, rerr, filter)
+        self.hlim  = hlim
         self.scale = scale
 
         # Constant settings
@@ -91,6 +92,12 @@ class Pace:
             return int(np.sign(self.h))
 
     def __call__(self, x, y, k):
+        if self.hlim is not None:
+            H = self.hlim(x, y)
+            H = np.nanmin(H)
+            if abs(self.h) > H:
+                self.h = self.sign() * H
+
         for _ in range(self.n):
             Y, R, K = self.step(x, y, self.h, k)
             X       = x + self.h

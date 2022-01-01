@@ -29,7 +29,7 @@ class odeint:
 
     def __init__(self,
         rhs, x, y, h,
-        eqax=None, filter=None,
+        eqax=None, hlim=None, filter=None,
         dtype=np.float32,
         **kwargs,
     ):
@@ -44,12 +44,15 @@ class odeint:
             fax = {i:i for   i in range(y.ndim) if i not in eqax}
             sax = {o:i for o,i in enumerate(fax.values())}
             rhs = xmap(rhs, in_axes=({}, fax), out_axes=fax)
+            if hlim   is not None:
+                hlim   = xmap(hlim,   in_axes=({}, fax), out_axes=sax)
             if filter is not None:
                 xmf    = xmap(filter, in_axes=({}, fax), out_axes=sax)
                 slices = tuple(None if i in eqax else slice(None) for i in range(y.ndim))
                 filter = lambda x, y: xmf(x, y)[slices] # closure on xmf and slices
 
         kwargs['eqax'  ] = eqax
+        kwargs['hlim'  ] = hlim
         kwargs['filter'] = filter
 
         self.rhs    = rhs
