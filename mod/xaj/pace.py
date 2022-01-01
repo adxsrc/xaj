@@ -92,12 +92,14 @@ class Pace:
             return int(np.sign(self.h))
 
     def __call__(self, x, y, k):
+        # Step size limiter
         if self.hlim is not None:
             H = self.hlim(x, y)
             H = np.nanmin(H)
             if abs(self.h) > H:
                 self.h = self.sign() * H
 
+        # Try adjust step size
         for _ in range(self.n):
             Y, R, K = self.step(x, y, self.h, k)
             X       = x + self.h
@@ -111,5 +113,6 @@ class Pace:
             if P:
                 break
 
+        # Done; update internal states
         self.r = max(R, self.rmin) # unlike self.p, self.r is only updated if pass or R == nan
         return X, Y, K
