@@ -37,11 +37,12 @@ class Trek:
     """
     def __init__(self,
         rhs, x, y, h,
-        dense=True,
+        steps=True, dense=True,
         names=None,
         **kwargs,
     ):
         self.pace  = Pace(Step(rhs), h, **kwargs)
+        self.steps = steps
         self.dense = Dense if dense else None
         self.names = names
         self.ds    = [ ] # self.ds always has one less element than xs and ys
@@ -69,8 +70,12 @@ class Trek:
             if self.dense is not None:
                 self.ds.append(self.dense(self.xs[-1], X, self.ys[-1], Y, K))
 
+            if not self.steps:
+                del self.xs[1:]
+                del self.ys[1:]
             self.xs.append(X)
             self.ys.append(Y)
+
             self.k = K
 
             if pbar is not None:
