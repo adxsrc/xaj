@@ -63,8 +63,8 @@ class Pace:
 
     """
     def __init__(self,
-        step, h, hlim=None, filter=None,
-        n=8, r=0.125, rmin=1e-4,
+        step, h,       hmin=1e-6, hlim=None, filter=None,
+        n=8,  r=0.125, rmin=1e-4,
         eqax=None, atol=1e-4, rtol=1e-4,
         **kwargs,
     ):
@@ -78,6 +78,7 @@ class Pace:
 
         # Constant settings
         self.n    = n
+        self.hmin = hmin
         self.rmin = rmin
 
         # Varying states
@@ -86,7 +87,7 @@ class Pace:
         self.r = r
 
     def sign(self):
-        if np.isnan(self.r):
+        if np.isnan(self.r) or abs(self.h) < self.hmin:
             return 0
         else:
             return int(np.sign(self.h))
