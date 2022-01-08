@@ -113,6 +113,8 @@ class Pace:
             self.p  = P
             if P:
                 break
+        else:
+            raise RuntimeError(f'Refinement fails, try increase refinement step self.n={self.n}')
 
         # Done; update internal states
         self.r = max(R, self.rmin) # unlike self.p, self.r is only updated if pass or R == nan
