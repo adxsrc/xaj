@@ -59,13 +59,13 @@ class odeint:
         self.data   = [self.IC(x, y, h), None, None]
         self.kwargs = kwargs
 
-    def extend(self, Xt):
+    def extend(self, Xt, **kwargs):
         s = int(np.sign(Xt - self.data[0].x))
         if s != 0:
             if self.data[s] is None:
                 ic = self.data[0]
                 self.data[s] = Trek(self.rhs, ic.x, ic.y, s * ic.h, **self.kwargs)
-            self.data[s].extend(Xt)
+            self.data[s].extend(Xt, **kwargs)
 
     @property
     def xs(self):
@@ -95,7 +95,7 @@ class odeint:
             l = l + [self.data[ 1].evaluate(xp)]
         return np.concatenate(l)
 
-    def __call__(self, xs):
-        self.extend(max(xs))
-        self.extend(min(xs))
+    def __call__(self, xs, **kwargs):
+        self.extend(max(xs), **kwargs)
+        self.extend(min(xs), **kwargs)
         return self.evaluate(xs)

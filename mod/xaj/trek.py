@@ -37,11 +37,12 @@ class Trek:
     """
     def __init__(self,
         rhs, x, y, h,
-        steps=True, dense=True,
+        N=None, steps=True, dense=True,
         names=None,
         **kwargs,
     ):
         self.pace  = Pace(Step(rhs), h, **kwargs)
+        self.N     = 10000 if N is None else N
         self.steps = steps
         self.dense = Dense if dense else None
         self.names = names
@@ -54,17 +55,23 @@ class Trek:
         s = self.pace.sign()
         return s * self.xs[-1] >= s * Xt
 
-    def extend(self, Xt):
+    def extend(self, Xt, N=None):
+        if self.done(Xt):
+            print(f'target = {Xt} exceeded; SKIP')
+            return
 
-        if not self.done(Xt) and self.names is not None:
+        if N is None:
+            N = self.N
+
+        if self.names is not None:
             from tqdm import tqdm
             pbar = tqdm(position=0, leave=True)
         else:
             pbar = None
 
-        while not self.done(Xt):
+        for _ in range(N):
             X, Y, K = self.pace(self.xs[-1], self.ys[-1], self.k)
-            if self.pace.sign() == 0:
+            if self.done(Xt):
                 break
 
             if self.dense is not None:
@@ -85,6 +92,8 @@ class Trek:
                     'd'+ind:f'{self.pace.h:.03g}',
                 })
                 pbar.update(1)
+        else:
+            print(f'Integration unfinished, try increasing allowed number of steps N={N}')
 
         if pbar is not None:
             pbar.close()
