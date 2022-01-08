@@ -35,9 +35,14 @@ class Trek:
         Trek (verb): go on a long arduous journey, typically on foot.
 
     """
-    def __init__(self, rhs, x, y, h, names=None, **kwargs):
+    def __init__(self,
+        rhs, x, y, h,
+        dense=True,
+        names=None,
+        **kwargs,
+    ):
         self.pace  = Pace(Step(rhs), h, **kwargs)
-        self.dense = Dense
+        self.dense = Dense if dense else None
         self.names = names
         self.ds    = [ ] # self.ds always has one less element than xs and ys
         self.xs    = [x]
@@ -60,7 +65,10 @@ class Trek:
             X, Y, K = self.pace(self.xs[-1], self.ys[-1], self.k)
             if self.pace.sign() == 0:
                 break
-            self.ds.append(self.dense(self.xs[-1], X, self.ys[-1], Y, K))
+
+            if self.dense is not None:
+                self.ds.append(self.dense(self.xs[-1], X, self.ys[-1], Y, K))
+
             self.xs.append(X)
             self.ys.append(Y)
             self.k = K
