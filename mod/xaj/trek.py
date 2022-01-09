@@ -63,12 +63,7 @@ class Trek:
         if N is None:
             N = self.N
 
-        if self.names is not None:
-            from tqdm import tqdm
-            pbar = tqdm(position=0, leave=True)
-        else:
-            pbar = None
-
+        pbar = None
         for _ in range(N):
             X, Y, K = self.pace(self.xs[-1], self.ys[-1], self.k)
             if self.done(Xt):
@@ -85,13 +80,16 @@ class Trek:
 
             self.k = K
 
-            if pbar is not None:
+            if self.names is not None:
+                p = int(100 * np.clip((X - self.xs[0]) / (Xt - self.xs[0]), 0, 1))
+
+                if pbar is None:
+                    from tqdm import tqdm
+                    pbar = tqdm(initial=p, total=100, position=0, leave=True)
+
                 ind = self.names['ind']
-                pbar.set_postfix({
-                        ind:f'{X:.03g}',
-                    'd'+ind:f'{self.pace.h:.03g}',
-                })
-                pbar.update(1)
+                pbar.set_postfix_str(f'{ind}={X:<#.3g}, d{ind}={self.pace.h:<#9.3g}')
+                pbar.update(p - pbar.n)
         else:
             print(f'Integration unfinished, try increasing allowed number of steps N={N}')
 
