@@ -87,7 +87,11 @@ class Pace:
         self.r = r
 
     def sign(self):
-        if np.isnan(self.r) or abs(self.h) < self.hmin:
+        if np.isnan(self.r):
+            print('All equations were filtered out')
+            return 0
+        elif abs(self.h) < self.hmin:
+            print('Step size became too small')
             return 0
         else:
             return int(np.sign(self.h))
