@@ -33,7 +33,7 @@ setup(
     package_dir={'': 'mod'},
     python_requires='>=3.6', # `xaj` uses python3's f-string and typing
     install_requires=[
-        'jax',
+        'jax>=0.2.26',
         'tqdm',
     ],
 )
