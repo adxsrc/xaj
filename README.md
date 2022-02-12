@@ -15,7 +15,8 @@ derivative functions in `JAX`.
 
 Specifically, `XAJ` provides a single function `odeint()`.
 Applying it to another function `rhs()` and the initial conditions
-returns a callable `sol`, which interpolates the dense output.
+returns the numerical solution as a callable `ns`, which interpolates
+the dense output.
 
     from xaj import odeint
     from jax import numpy as np
@@ -24,10 +25,18 @@ returns a callable `sol`, which interpolates the dense output.
     x0  = 0
     y0  = 1
 
-    sol = odeint(rhs, x0, y0, 1)
+    ns  = odeint(rhs, x0, y0, 1)
 
     x   = np.linspace(0, 5)
-    y   = sol(x)
+    y   = ns(x)
 
 The numerical integration happens in a "lazy" way, which is triggered
-by the extreme values of the argument of `sol`.
+by the extreme values of the argument of `ns`.
+Alternatively, it is possible to obtain the numerical solutions at the
+full steps by
+
+    xs = ns.xs
+    ys = ns.ys
+
+Demos on how to use `XAJ` can be found in the [`demos`](demos/)
+directory.
