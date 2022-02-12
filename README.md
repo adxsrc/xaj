@@ -1,4 +1,5 @@
 [![Lint and test XAJ](https://github.com/adxsrc/xaj/actions/workflows/python-test.yml/badge.svg)](https://github.com/adxsrc/xaj/actions/workflows/python-test.yml)
+[![Publish XAJ to PyPI](https://github.com/adxsrc/xaj/actions/workflows/python-publish.yml/badge.svg)](https://github.com/adxsrc/xaj/actions/workflows/python-publish.yml)
 
 # `XAJ`
 
