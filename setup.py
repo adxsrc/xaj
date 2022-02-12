@@ -28,7 +28,7 @@ setup(
     url='https://github.com/adxsrc/xaj',
     author='Chi-kwan Chan',
     author_email='chanc@arizona.edu',
-    description='General relativistic ray tracing in python based on JAX',
+    description='ODE integrator for JAX',
     packages=find_packages('mod'),
     package_dir={'': 'mod'},
     python_requires='>=3.7',
