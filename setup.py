@@ -31,8 +31,9 @@ setup(
     description='General relativistic ray tracing in python based on JAX',
     packages=find_packages('mod'),
     package_dir={'': 'mod'},
-    python_requires='>=3.6', # `xaj` uses python3's f-string and typing
+    python_requires='>=3.7',
     install_requires=[
+        'jaxlib',
         'jax>=0.2.26',
         'tqdm',
     ],
