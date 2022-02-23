@@ -24,7 +24,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='xaj',
-    version='0.1.0',
+    version='0.1.1',
     url='https://github.com/adxsrc/xaj',
     author='Chi-kwan Chan',
     author_email='chanc@arizona.edu',
@@ -33,8 +33,8 @@ setup(
     package_dir={'': 'mod'},
     python_requires='>=3.7',
     install_requires=[
-        'jaxlib',
-        'jax>=0.2.26',
+        'jaxlib>=0.3.0',
+        'jax>=0.3.0',
         'tqdm',
     ],
 )
