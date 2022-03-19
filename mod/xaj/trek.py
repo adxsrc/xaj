@@ -72,11 +72,12 @@ class Trek:
             if self.dense is not None:
                 self.ds.append(self.dense(self.xs[-1], X, self.ys[-1], Y, K))
 
-            if not self.steps:
-                del self.xs[1:]
-                del self.ys[1:]
-            self.xs.append(X)
-            self.ys.append(Y)
+            if self.steps:
+                self.xs.append(X)
+                self.ys.append(Y)
+            else:
+                self.xs[-1] = X
+                self.ys[-1] = Y
 
             self.k = K
 
