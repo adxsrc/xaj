@@ -47,8 +47,8 @@ class Trek:
         self.dense = Dense if dense else None
         self.names = names
         self.ds    = [ ] # self.ds always has one less element than xs and ys
-        self.xs    = [x]
-        self.ys    = [y]
+        self.xs    = [x] if steps else [x, x] # TODO: improve "taste" for `steps` handling
+        self.ys    = [y] if steps else [y, y] # TODO: improve "taste" for `steps` handling
         self.k     = Init(rhs)(x, y)
 
     def done(self, Xt):
