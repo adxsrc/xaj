@@ -75,8 +75,8 @@ class Pace:
 
         # Internal methods
         self.step   = jit(wrapper(step, rerr, filter))
-        self.hlower = jit(hlower) if hlower else hlower
-        self.hupper = jit(hupper) if hupper else hupper
+        self.hlower = jit(hlower) if hlower else None
+        self.hupper = jit(hupper) if hupper else None
         self.scale  = scale
 
         # Constant settings
