@@ -65,7 +65,7 @@ class Pace:
     def __init__(self,
         step, h,
         hmin=1e-6, filter=None,
-        hupper=None,
+        hlower=None, hupper=None,
         rlower=1e-4, rn=8, r=0.125,
         eqax=None, atol=1e-4, rtol=1e-4,
         **kwargs,
@@ -75,6 +75,7 @@ class Pace:
 
         # Internal methods
         self.step   = jit(wrapper(step, rerr, filter))
+        self.hlower = jit(hlower) if hlower else hlower
         self.hupper = jit(hupper) if hupper else hupper
         self.scale  = scale
 
@@ -100,18 +101,29 @@ class Pace:
 
     def __call__(self, x, y, k):
         # Step size limiter
+        P = False
+
         if self.hupper is not None:
             H = self.hupper(x, y)
             H = np.nanmin(H)
-            if abs(self.h) > H:
+            if abs(self.h) >= H:
                 self.h = self.sign() * H
+                P = True
+
+        if self.hlower is not None:
+            h = self.hlower(x, y)
+            h = np.nanmin(h)
+            if abs(self.h) <= h:
+                self.h = self.sign() * h
+                P = True
+                print('WARNING: enforcing hlower()')
 
         # Try adjust step size
         for _ in range(self.rn):
             Y, R, K = self.step(x, y, self.h, k)
             X       = x + self.h
             R       = np.nanmax(R) # xaj supports only global step for now
-            if np.isnan(R):
+            if P or np.isnan(R):
                 break # do not update `self.h` and `self.p`
 
             P       = R <= 1.0
