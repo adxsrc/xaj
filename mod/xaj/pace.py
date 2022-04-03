@@ -116,7 +116,7 @@ class Pace:
             if abs(self.h) <= h:
                 self.h = self.sign() * h
                 P = True
-                print('WARNING: enforcing hlower()')
+                print(f'WARNING: enforcing hlower() at x = {x}')
 
         # Try adjust step size
         for _ in range(self.rn):
