@@ -101,35 +101,35 @@ class Pace:
 
     def __call__(self, x, y, k):
         # Step size limiter
-        P = False
+        p = False
 
         if self.hupper is not None:
             H = self.hupper(x, y)
             H = np.nanmin(H)
             if abs(self.h) >= H:
+                p = True
                 self.h = self.sign() * H
-                P = True
 
         if self.hlower is not None:
             h = self.hlower(x, y)
             h = np.nanmin(h)
             if abs(self.h) <= h:
+                p = True
                 self.h = self.sign() * h
-                P = True
-                print(f'WARNING: enforcing hlower() at x = {x}')
+                print(f'WARNING: enforcing hlower() = {h} at x = {x}')
 
         # Try adjust step size
         for _ in range(self.rn):
             Y, R, K = self.step(x, y, self.h, k)
             X       = x + self.h
             R       = np.nanmax(R) # xaj supports only global step for now
-            if P or np.isnan(R):
+            if np.isnan(R):
                 break # do not update `self.h` and `self.p`
 
             P       = R <= 1.0
             self.h *= self.scale(self.r, R, self.p, P)
             self.p  = P
-            if P:
+            if p or P:
                 break
         else:
             raise RuntimeError(f'Refinement fails, try increase refinement step self.n={self.n}')
