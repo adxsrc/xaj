@@ -66,7 +66,7 @@ class Pace:
         step, h,
         hmin=1e-6, filter=None,
         hlower=None, hupper=None,
-        rlower=1e-4, rn=8, r=0.125,
+        rlower=1e-4, rn=64, r=0.125,
         eqax=None, atol=1e-4, rtol=1e-4,
         **kwargs,
     ):
