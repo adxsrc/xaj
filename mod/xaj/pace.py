@@ -63,8 +63,10 @@ class Pace:
 
     """
     def __init__(self,
-        step, h,       hmin=1e-6, hlim=None, filter=None,
-        n=8,  r=0.125, rmin=1e-4,
+        step, h,
+        hmin=1e-6, filter=None,
+        hupper=None,
+        rlower=1e-4, rn=8, r=0.125,
         eqax=None, atol=1e-4, rtol=1e-4,
         **kwargs,
     ):
@@ -72,14 +74,14 @@ class Pace:
         scale = Scale(**kwargs)
 
         # Internal methods
-        self.step  = jit(wrapper(step, rerr, filter))
-        self.hlim  = jit(hlim) if hlim else hlim
-        self.scale = scale
+        self.step   = jit(wrapper(step, rerr, filter))
+        self.hupper = jit(hupper) if hupper else hupper
+        self.scale  = scale
 
         # Constant settings
-        self.n    = n
-        self.hmin = hmin
-        self.rmin = rmin
+        self.rn     = rn
+        self.hmin   = hmin
+        self.rlower = rlower
 
         # Varying states
         self.h = h
@@ -98,14 +100,14 @@ class Pace:
 
     def __call__(self, x, y, k):
         # Step size limiter
-        if self.hlim is not None:
-            H = self.hlim(x, y)
+        if self.hupper is not None:
+            H = self.hupper(x, y)
             H = np.nanmin(H)
             if abs(self.h) > H:
                 self.h = self.sign() * H
 
         # Try adjust step size
-        for _ in range(self.n):
+        for _ in range(self.rn):
             Y, R, K = self.step(x, y, self.h, k)
             X       = x + self.h
             R       = np.nanmax(R) # xaj supports only global step for now
@@ -121,5 +123,5 @@ class Pace:
             raise RuntimeError(f'Refinement fails, try increase refinement step self.n={self.n}')
 
         # Done; update internal states
-        self.r = max(R, self.rmin) # unlike self.p, self.r is only updated if pass or R == nan
+        self.r = max(R, self.rlower) # unlike self.p, self.r is only updated if pass or R == nan
         return X, Y, K
