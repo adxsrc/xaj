@@ -33,8 +33,8 @@ setup(
     package_dir={'': 'mod'},
     python_requires='>=3.7',
     install_requires=[
-        'jaxlib>=0.3.0',
-        'jax>=0.3.0',
+        'jaxlib>=0.3.0,<0.4.0',
+        'jax>=0.3.0,<0.4.0',
         'tqdm',
     ],
 )
