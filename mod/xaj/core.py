@@ -86,7 +86,7 @@ class odeint:
         return np.array(ys)
 
     def evaluate(self, xs):
-        l = [self.data[0].y[np.newaxis,...]] * (xs == self.data[0].x).sum()
+        l = [self.data[0].y[np.newaxis,...]] * int((xs == self.data[0].x).sum())
         xm = xs[xs < self.data[0].x]
         if len(xm) > 0:
             l = [self.data[-1].evaluate(xm)] + l
