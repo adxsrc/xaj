@@ -11,6 +11,8 @@ limit the scope of ``XAJ``, which leads to interesting design
 patterns.
 
 
+.. _sec_pattern_stepping-engine:
+
 Stepping Engine
 ---------------
 

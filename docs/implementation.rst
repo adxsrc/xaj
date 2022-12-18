@@ -40,3 +40,37 @@ choose not to do it to match better with the ``JAX`` ecosystem.
 It is implemented as a pure function using python function closure,
 and is composible with standard ``JAX`` transformations such as
 ``jit`` and ``vmap``.
+
+
+Stepping Engine
+---------------
+
+We use ``jax.lax.while_loop`` to implement the
+:ref:`sec_pattern_stepping-engine`, which has the semantics
+
+.. code-block:: python3
+
+   def while_loop(cond, body, state):
+       while cond(state):
+           state = body(state)
+       return state
+
+Because the functions ``cond`` and ``body`` are pure, we need to pass
+to them the full state, which includes the current step size, the
+current solution of the ODEs, the shared states across steps, etc.
+The body function can be logically implement with the following code.
+
+.. code-block:: python3
+
+   def body(state):
+       _, (t,x), (h,k), (i,r) = state
+
+       E, T, X, K = step(h, t, x, k)
+       H, retry   = ctrl(h, t, x, E, T, X)
+
+       if retry:
+           state = _, (T,X), (H,k), (i+1,r+1) # retry
+       else:
+           state = _, (T,X), (H,k), (i+1,0)   # continue
+
+       return state
