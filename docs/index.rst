@@ -12,6 +12,7 @@
 
    interface.rst
    pattern.rst
+   implementation.rst
 
 
 Indices and tables
