@@ -11,6 +11,7 @@
    :caption: Contents:
 
    interface.rst
+   pattern.rst
 
 
 Indices and tables
