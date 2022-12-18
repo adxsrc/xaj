@@ -38,3 +38,24 @@ in the affine parameter, we also want the following.
 
 3. ``XAJ`` should support integrating in both positive and negative
    ``t`` directions.
+
+
+Composability
+-------------
+
+To make ``XAJ`` work with the rest of the ``JAX`` ecosystem, we
+require the following.
+
+4. ``odeint`` should have built-in pytree support just like ``grad``.
+   See, e.g., the ``JAX``
+   `MLP example <https://jax.readthedocs.io/en/latest/jax-101/05.1-pytrees.html#example-ml-model-parameters>`_.
+
+5. The numerical solution ``x(t)`` should support other ``JAX``
+   transformations such as ``jit`` and ``vmap``.
+
+Because of the Single Instruction, Multiple Data (SIMD) architectures
+of GPUs and TPUs, we don't expect performance gain by evaluating
+different systems of ODEs at the same time.
+Hence, ``vmap`` over different ``f(t, x)`` is not supported in
+``XAJ``, just like ``JAX`` does not support vmapping to multiple
+functions ``vmap(grad)([f1, f2, f3])``.
