@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "xaj"
+version = "0.2.0-dev"
+description = "Numerical integrators for Google's JAX"
+authors = ["Chi-kwan Chan <chanc@arizona.edu>"]
+readme = "README.md"
+packages = [{include="xaj", from="mod"}]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
