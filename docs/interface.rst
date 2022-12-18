@@ -59,3 +59,52 @@ different systems of ODEs at the same time.
 Hence, ``vmap`` over different ``f(t, x)`` is not supported in
 ``XAJ``, just like ``JAX`` does not support vmapping to multiple
 functions ``vmap(grad)([f1, f2, f3])``.
+
+
+Call Signature
+--------------
+
+How should we design the call signature of ``odeint``, its invert
+function, and the numerical solution?
+Because ODEs are uniquely specified only when the initial conditions
+are given, ``XAJ``'s integration interface is more complicated than
+``JAX``'s derivative interface.
+
+Let's consider a specific ODE
+
+.. math::
+
+   \frac{dx}{dt} = f(t, x) = x + t.
+
+It has analytical solution :math:`x(t) = c e^t - t - 1`.
+Using the initial condition :math:`x(t_0) = x_0`, we can rewrite the
+analytical solution as
+
+.. math::
+
+   x(t; t_0, x_0) = (x_0 + t_0 + 1)e^{t - t_0} - t - 1.
+
+It is straightforward to verify :math:`\partial_t x(t; t_0, x_0) = x -
+t = f(t, x)`, where :math:`t_0` and :math:`x_0` can be seen as
+parameters of the solution :math:`x`.
+Given that ``jacfwd`` (or ``jacrev`` or ``grad``) by default takes the
+derivatives with respect to only the first argument, we can use the
+convention
+
+.. code-block::
+
+   odeint: f(t, x, aux) -> x(t, t0, x0, aux)
+   jacfwd: x(t, t0, x0, aux) -> f(t, x, aux)
+
+where ``t`` and ``t0`` are scalars and ``f``, ``x``, and ``x0`` may be
+arrays.
+In the special case that ``f`` is independent of ``t``, we have
+
+.. code-block::
+
+   odeint: f(x, aux) -> x(t-t0, x0, aux)
+   jacfwd: x(t-t0, x0, aux) -> f(x, aux)
+
+We may see ``odeint`` as a functional (or high-order function) that
+adds a new independent variable ``t``, while ``jacfwd`` is its invert
+and removes the independent variable.
