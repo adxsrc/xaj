@@ -88,3 +88,27 @@ This will result
 which saves 33% of the computation from the naive implementation; or
 in other words avoid 50% of wasted computation from the optimal
 implementation.
+
+
+Dense Output
+------------
+
+In ``XAJ``'s :doc:`interface signatures <interface>`, ``x(t, t0, x0,
+aux)`` can in principle be a pure function without side effect (and
+internal states).
+However, many adaptive integrators support dense output, where the
+numerical solutions are saved as piece-wise polynomials for later
+interpolation.
+This is particularly efficient if we want to obtain numerical
+solutions on a large number of sampling points.
+
+How should we design ``XAJ`` to take advantage of dense output?
+
+A natural choice is to cache the dense outputs with ``x(t, t0, x0,
+aux)``, and reuse the cache whenever possible.
+Given that the numerical solutions in general depend on ``t0``,
+``x0``, and ``aux``, we can use the tuple ``(t0, x0, aux)`` as the
+cache index.
+The cache should also be a
+`pytree <https://jax.readthedocs.io/en/latest/pytrees.html>`_
+in order to be composable with other ``JAX`` functions.
