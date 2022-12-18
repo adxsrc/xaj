@@ -60,6 +60,28 @@ Hence, ``vmap`` over different ``f(t, x)`` is not supported in
 ``XAJ``, just like ``JAX`` does not support vmapping to multiple
 functions ``vmap(grad)([f1, f2, f3])``.
 
+Although it may seem natural to allow implicit vectorization, i.e., to
+use ``x(jnp.array([0.0, 1.0, 2.0]))`` to evaluate ``x(t)`` pointwisely
+on the array ``t`` , we purposely disfavor it in order to be
+consistent with ``JAX``'s derivative interface ``grad``, ``jacfwd``,
+and ``jacrev``.
+
+6. The preferred way to evaluate ``x(t)`` pointwisely is to ``vmap``
+   it for arbitrary pytree ``t``, i.e., ``vmap(x)(t)``.
+
+7. We should support ``vmap`` over the initial conditions.
+   This complicates our design but we can expect something similar to
+   ``x = vmap(odeint(f))(t0, x0)`` to work, where ``t0`` and ``x0``
+   are arbitrary pytrees.
+
+8. We should also support ``vmap`` over auxiliary parameters of the
+   ODEs.
+   This allows, for example, integrating geodesics around multiple
+   black holes with different spins.
+   The interface should be compatible with vmapping over initial
+   conditions, i.e., ``x = vmap(odeint(f))(aux=aux)`` where ``aux`` is
+   an arbitrary pytree.
+
 
 Call Signature
 --------------
