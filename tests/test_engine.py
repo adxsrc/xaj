@@ -20,6 +20,8 @@ from jax.config import config
 config.update("jax_enable_x64", True)
 
 from xaj.core import *
+from jax import vmap
+from jax import numpy as np
 
 
 def rhs(t, x):
@@ -32,12 +34,27 @@ def test_engine():
     ctrl = StepControl()
     engn = Engine(step, ctrl)
 
-    (t,x1), (h,k) = engn(1.0, (0.0,1.0), (0.01,None))
+    (t,x0), (h,k), (i,r) = vmap(engn, (0, (None), (None)))(
+        np.array([1.0, 2.0, 3.0]),
+        (0.0,1.0),
+        (0.01,None)
+    )
+
+    print(x0)
+    print(i)
 
     # Manual Euler method
+    x1 = 1.0
+    for _ in range(i[0]):
+        x1 += 0.01 * x1
+
     x2 = 1.0
-    for i in range(100):
+    for _ in range(i[1]):
         x2 += 0.01 * x2
 
-    print(x1, x2)
-    assert x1 == x2
+    x3 = 1.0
+    for _ in range(i[2]):
+        x3 += 0.01 * x3
+
+    # Compare
+    assert np.all(x0 == np.array([x1, x2, x3]))

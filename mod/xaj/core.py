@@ -86,15 +86,6 @@ def Engine(step, ctrl, imax=1024, rmax=32):
         Closure on cond() and body().
 
         """
-        target, tx, hk, (i,r) = while_loop(cond, body, (target, tx, hk, (0,0)))
-
-        if i >= imax:
-            raise RuntimeWarning(
-                f"Number of iterations i={i} exceed imax={imax}")
-        if r >= rmax:
-            raise RuntimeWarning(
-                f"Number of step refinements r={r} reaches rmax={rmax}")
-
-        return tx, hk
+        return while_loop(cond, body, (target, tx, hk, (0,0)))[1:]
 
     return engine
