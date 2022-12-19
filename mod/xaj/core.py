@@ -23,3 +23,12 @@ def Step(rhs):
         return x + h * rhs(t, x)
 
     return Euler
+
+
+def StepControl():
+
+    def constant(h):
+        """Constant step"""
+        return h
+
+    return constant
