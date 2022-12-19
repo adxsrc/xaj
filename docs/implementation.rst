@@ -68,9 +68,7 @@ The body function can be logically implement with the following code.
        E, T, X, K = step(h, t, x, k)
        H, retry   = ctrl(h, t, x, E, T, X)
 
-       if retry:
-           state = _, (T,X), (H,k), (i+1,r+1) # retry
+       if not retry:
+           return _, (T,X), (H,k), (i+1,0)   # continue
        else:
-           state = _, (T,X), (H,k), (i+1,0)   # continue
-
-       return state
+           return _, (T,X), (H,k), (i+1,r+1) # retry

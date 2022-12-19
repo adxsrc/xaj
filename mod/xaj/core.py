@@ -20,6 +20,7 @@ from jax.lax import switch, while_loop, select
 
 
 def Step(rhs):
+    """Stepper Factory"""
 
     def Euler(h, t, x, k):
         """Forward Euler scheme"""
@@ -29,6 +30,7 @@ def Step(rhs):
 
 
 def StepControl():
+    """Step Controller Factory"""
 
     def constant(h, t, x, E, T, X):
         """Constant step"""
