@@ -21,18 +21,18 @@ from jax.lax import switch, while_loop, select
 
 def Step(rhs):
 
-    def Euler(h, t, x):
+    def Euler(h, t, x, k):
         """Forward Euler scheme"""
-        return x + h * rhs(t, x)
+        return None, t + h, x + h * rhs(t, x), None
 
     return Euler
 
 
 def StepControl():
 
-    def constant(h):
+    def constant(h, t, x, E, T, X):
         """Constant step"""
-        return h
+        return h, False
 
     return constant
 
