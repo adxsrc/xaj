@@ -43,4 +43,7 @@ def Sync(name, f):
     return p.bind
 
 
+all = Sync("all", np.all)
 any = Sync("any", np.any)
+max = Sync("max", np.max)
+min = Sync("min", np.min)
