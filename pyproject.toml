@@ -9,6 +9,7 @@ packages = [{include="xaj", from="mod"}]
 [tool.poetry.dependencies]
 python = "^3.8"
 jax = "^0.4.1"
+chex = "^0.1.5"
 
 [tool.poetry.group.dev]
 optional = true
