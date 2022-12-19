@@ -13,30 +13,34 @@
 # limitations under the License.
 
 
-"""Sync within a vmap"""
+"""Sync across multiple elements in a vmap"""
 
-
-from jax import numpy as np
 
 from jax.core import Primitive, ShapedArray
 
 from jax.interpreters.mlir     import register_lowering,  lower_fun
 from jax.interpreters.batching import primitive_batchers, not_mapped
 
+from jax import numpy as np
 
-def impl(x):
-    return np.any(x)
 
-# Make function call work
-p = Primitive("any")
-p.def_impl(impl)
+def Sync(name, f):
 
-# Make jit() work
-register_lowering(p, lower_fun(impl, multiple_results=False))
-p.def_abstract_eval(lambda x: ShapedArray([], x.dtype))
+    def impl(x):
+        return f(x)
 
-# Make vmap() work
-primitive_batchers[p] = lambda a, _: (p.bind(*a), not_mapped)
+    # Make function call work
+    p = Primitive(name)
+    p.def_impl(impl)
 
-def any(x):
-    return p.bind(x)
+    # Make jit() work
+    register_lowering(p, lower_fun(impl, multiple_results=False))
+    p.def_abstract_eval(lambda x: ShapedArray([], x.dtype))
+
+    # Make vmap() work
+    primitive_batchers[p] = lambda a, _: (p.bind(*a), not_mapped)
+
+    return p.bind
+
+
+any = Sync("any", np.any)
