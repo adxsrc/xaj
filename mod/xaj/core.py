@@ -16,7 +16,8 @@
 """Numerical schemes"""
 
 
-from jax.lax import switch, while_loop, select
+from jax.lax  import switch, while_loop, select
+from xaj.sync import any
 
 
 def Step(rhs):
@@ -86,6 +87,16 @@ def Engine(step, ctrl, imax=1024, rmax=32):
         Closure on cond() and body().
 
         """
-        return while_loop(cond, body, (target, tx, hk, (0,0)))[1:]
+        _, tx, hk, (i,r) = while_loop(cond, body, (target, tx, hk, (0,0)))
+
+        if any(i >= imax):
+            raise RuntimeWarning(
+                f"Number of iterations i={i} exceed imax={imax}")
+
+        if any(r >= rmax):
+            raise RuntimeWarning(
+                f"Number of step refinements r={r} reaches rmax={rmax}")
+
+        return tx, hk
 
     return engine
