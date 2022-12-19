@@ -10,6 +10,12 @@ packages = [{include="xaj", from="mod"}]
 python = "^3.8"
 jax = "^0.4.1"
 
+[tool.poetry.group.dev]
+optional = true
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.2.0"
+
 [tool.poetry.group.docs]
 optional = true
 
