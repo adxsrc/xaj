@@ -77,8 +77,8 @@ def Engine(step, ctrl, imax=1024, rmax=32):
         H, retry   = ctrl(h, t, x, E, T, X)
 
         return switch(int(retry), [
-            lambda: (_, (T,X), (H,K), (i+1, 0  )), # continue
-            lambda: (_, (t,x), (h,k), (i+1, r+1)), # retry
+            lambda: (_, (T,X), (H,K), (i+1, 0)), # continue
+            lambda: (_, (t,x), (h,k), (i, r+1)), # retry
         ])
 
     def engine(target, tx, hk):
