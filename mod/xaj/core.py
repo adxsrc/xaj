@@ -62,8 +62,8 @@ def Engine(step, ctrl, imax=1024, rmax=32):
         Closure on imax and rmax.
 
         """
-        target, (t,_), (h,_), (i,r) = state
-        return (i < imax) & (r < rmax) & select(h < 0.0, target < t, t < target)
+        T, (t,_), (h,_), (i,r) = state
+        return (i < imax) & (r < rmax) & select(h < 0.0, T < t, t < T)
 
     def body(state):
         """Body function for the lax while loop
@@ -81,13 +81,13 @@ def Engine(step, ctrl, imax=1024, rmax=32):
             lambda: (_, (t,x), (h,k), (i, r+1)), # retry
         ])
 
-    def engine(target, tx, hk):
+    def engine(T, tx, hk):
         """Stepping Engine
 
         Closure on cond() and body().
 
         """
-        _, tx, hk, (i,r) = while_loop(cond, body, (target, tx, hk, (0,0)))
+        _, tx, hk, (i,r) = while_loop(cond, body, (T, tx, hk, (0,0)))
 
         if any(i >= imax):
             raise RuntimeWarning(
