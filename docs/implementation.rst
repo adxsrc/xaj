@@ -72,3 +72,21 @@ The body function can be logically implement with the following code.
            return _, (T,X), (H,k), (i+1,0)   # continue
        else:
            return _, (T,X), (H,k), (i+1,r+1) # retry
+
+
+Cache and Dense Output
+----------------------
+
+An ``xaj.core.Cache`` stores the solution of the system of ODEs at
+full step or dense outputs.
+They are implemented as pytrees.
+
+
+Solution
+--------
+
+An ``xaj.core.Solution`` is a pytree with a ``__call__()`` method.
+It keeps track of the internal states and cache of numerical solutions
+to a system of ODEs.
+Because it is a pytree, it supports ``JAX`` transformations such as
+``jit`` and ``vmap``.
