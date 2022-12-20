@@ -62,7 +62,7 @@ def Engine(step, ctrl, imax=1024, rmax=32):
         Closure on imax and rmax.
 
         """
-        T, (t,_), (h,_), (i,r) = state
+        (t,_), (h,_), i,r,T = state
         return (i < imax) & (r < rmax) & select(h < 0.0, T < t, t < T)
 
     def body(state):
@@ -71,14 +71,14 @@ def Engine(step, ctrl, imax=1024, rmax=32):
          Closure on step and ctrl.
 
         """
-        _, (t,x), (h,k), (i,r) = state
+        (t,x), (h,k), i,r,*_ = state
 
         E, T, X, K = step(h, t, x, k)
         H, retry   = ctrl(h, t, x, E, T, X)
 
         return switch(int(retry), [
-            lambda: (_, (T,X), (H,K), (i+1, 0)), # continue
-            lambda: (_, (t,x), (h,k), (i, r+1)), # retry
+            lambda: ((T,X), (H,K), i+1,0,*_), # continue
+            lambda: ((t,x), (h,k), i,r+1,*_), # retry
         ])
 
     def engine(T, tx, hk):
@@ -87,7 +87,7 @@ def Engine(step, ctrl, imax=1024, rmax=32):
         Closure on cond() and body().
 
         """
-        _, tx, hk, (i,r) = while_loop(cond, body, (T, tx, hk, (0,0)))
+        tx, hk, i,r,*_ = while_loop(cond, body, (tx, hk, 0,0,T))
 
         if any(i >= imax):
             raise RuntimeWarning(
