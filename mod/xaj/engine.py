@@ -55,14 +55,17 @@ def Engine(step, ctrl, imax=1024, rmax=32):
     i, r: iteration and refinement counters
 
     """
+    def cont(h,t,T):
+        return select(h < 0.0, T < t, t < T)
+
     def cond(state):
         """Condition for the lax while loop
 
         Closure on imax and rmax.
 
         """
-        (t,_), (h,_), i,r,T = state
-        return (i < imax) & (r < rmax) & select(h < 0.0, T < t, t < T)
+        tx, hk, i,r,T = state
+        return cont(hk[0],tx[0],T) & (i < imax) & (r < rmax)
 
     def body(state):
         """Body function for the lax while loop
@@ -80,13 +83,13 @@ def Engine(step, ctrl, imax=1024, rmax=32):
             lambda: ((t,x), (h,k), i,r+1,*_), # retry
         ])
 
-    def warni(i):
-        if i >= imax:
+    def warni(c, i):
+        if c and i >= imax:
             raise RuntimeWarning(
                 f"Number of iterations i={i} exceed imax={imax}")
 
-    def warnr(r):
-        if r >= rmax:
+    def warnr(c, r):
+        if c and r >= rmax:
             raise RuntimeWarning(
                 f"Number of step refinements r={r} reaches rmax={rmax}")
 
@@ -96,10 +99,11 @@ def Engine(step, ctrl, imax=1024, rmax=32):
         Closure on cond() and body().
 
         """
-        tx, hk, i,r,*_ = while_loop(cond, body, (tx, hk, 0,0,T))
+        tx, hk, i,r,T = while_loop(cond, body, (tx, hk, 0,0,T))
 
-        callback(warni, i)
-        callback(warnr, r)
+        c = cont(hk[0],tx[0],T)
+        callback(warni, c, i)
+        callback(warnr, c, r)
 
         return tx, hk
 
