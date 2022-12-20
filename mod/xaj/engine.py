@@ -52,6 +52,7 @@ def Engine(step, ctrl, imax=1024, rmax=32):
     x, X: current and next dependent variable(s), usually "position"
     h, H: current and next step size
     k, K: substeps data for stepper; may be `None` if not used
+    c, C: continue or not
     i, r: iteration and refinement counters
 
     """
@@ -64,8 +65,8 @@ def Engine(step, ctrl, imax=1024, rmax=32):
         Closure on imax and rmax.
 
         """
-        tx, hk, i,r,G = state
-        return cont(hk[0],tx[0],G) & (i < imax) & (r < rmax)
+        _, _, (c,i,r), _ = state
+        return c & (i < imax) & (r < rmax)
 
     def body(state):
         """Body function for the lax while loop
@@ -73,14 +74,15 @@ def Engine(step, ctrl, imax=1024, rmax=32):
          Closure on step and ctrl.
 
         """
-        (t,x), (h,k), i,r,*_ = state
+        (t,x), (h,k), (c,i,r), G = state
 
         E, T, X, K = step(h, t, x, k)
         H, retry   = ctrl(h, t, x, E, T, X)
+        C          = cont(H, T, G)
 
         return switch(int(retry), [
-            lambda: ((T,X), (H,K), i+1,0,*_), # continue
-            lambda: ((t,x), (h,k), i,r+1,*_), # retry
+            lambda: ((T,X), (H,K), (C,i+1,0), G), # continue
+            lambda: ((t,x), (h,k), (c,i,r+1), G), # retry
         ])
 
     def warni(c, i):
@@ -99,9 +101,9 @@ def Engine(step, ctrl, imax=1024, rmax=32):
         Closure on cond() and body().
 
         """
-        tx, hk, i,r,G = while_loop(cond, body, (tx, hk, 0,0,G))
-
         c = cont(hk[0],tx[0],G)
+        tx, hk, (c,i,r), _ = while_loop(cond, body, (tx, hk, (c,0,0), G))
+
         callback(warni, c, i)
         callback(warnr, c, r)
 
