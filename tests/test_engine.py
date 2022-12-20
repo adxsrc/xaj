@@ -20,7 +20,7 @@ from jax.config import config
 config.update("jax_enable_x64", True)
 
 from xaj.engine import *
-from jax import vmap
+from jax import vmap, jit
 from jax import numpy as np
 
 
@@ -34,7 +34,7 @@ def test_engine():
     ctrl = StepControl()
     engn = Engine(step, ctrl)
 
-    (t,x0), (h,k) = vmap(engn, (0, (None), (None)))(
+    (t,x0), (h,k) = vmap(jit(engn), (0, (None), (None)))(
         np.array([1.0, 2.0, 3.0]),
         (0.0,1.0),
         (0.01,None)
