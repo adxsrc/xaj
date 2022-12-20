@@ -16,11 +16,30 @@
 """Sync across multiple elements in a vmap"""
 
 
-from xaj.core import Primitive
-from jax import numpy as np
+from jax import core
+from jax.interpreters import mlir, batching
 
 
-all = Primitive("all", np.all)
-any = Primitive("any", np.any)
-max = Primitive("max", np.max)
-min = Primitive("min", np.min)
+def Primitive(
+    name,
+    impl,
+    abst=lambda x: core.ShapedArray([], x.dtype),
+    axis=batching.not_mapped,
+):
+    """Create new JAX primitive"""
+
+    # Make function call work
+    p = core.Primitive(name)
+    p.def_impl(impl)
+
+    # Make jit() work
+    mlir.register_lowering(p, mlir.lower_fun(impl, multiple_results=False))
+    p.def_abstract_eval(abst)
+
+    # Make vmap() work
+    batching.primitive_batchers[p] = lambda args, axes: (
+        p.bind(*args),
+        axis(args, axes) if callable(axis) else axis,
+    )
+
+    return p.bind
