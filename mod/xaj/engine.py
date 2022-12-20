@@ -16,8 +16,8 @@
 """Numerical schemes"""
 
 
-from jax.lax  import switch, while_loop, select
-from xaj.sync import any
+from jax.lax   import switch, while_loop, select
+from jax.debug import callback
 
 
 def Step(rhs):
@@ -55,7 +55,6 @@ def Engine(step, ctrl, imax=1024, rmax=32):
     i, r: iteration and refinement counters
 
     """
-
     def cond(state):
         """Condition for the lax while loop
 
@@ -81,6 +80,16 @@ def Engine(step, ctrl, imax=1024, rmax=32):
             lambda: ((t,x), (h,k), i,r+1,*_), # retry
         ])
 
+    def warni(i):
+        if i >= imax:
+            raise RuntimeWarning(
+                f"Number of iterations i={i} exceed imax={imax}")
+
+    def warnr(r):
+        if r >= rmax:
+            raise RuntimeWarning(
+                f"Number of step refinements r={r} reaches rmax={rmax}")
+
     def engine(T, tx, hk):
         """Stepping Engine
 
@@ -89,13 +98,8 @@ def Engine(step, ctrl, imax=1024, rmax=32):
         """
         tx, hk, i,r,*_ = while_loop(cond, body, (tx, hk, 0,0,T))
 
-        if any(i >= imax):
-            raise RuntimeWarning(
-                f"Number of iterations i={i} exceed imax={imax}")
-
-        if any(r >= rmax):
-            raise RuntimeWarning(
-                f"Number of step refinements r={r} reaches rmax={rmax}")
+        callback(warni, i)
+        callback(warnr, r)
 
         return tx, hk
 
