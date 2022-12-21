@@ -17,6 +17,8 @@
 
 
 from jax import lax
+from jax import numpy as np
+from xaj.sync import all, any
 
 
 def scan(func, carry, scanees=None, filt=None, length=None, reverse=False, unroll=1):
@@ -59,3 +61,20 @@ def scan(func, carry, scanees=None, filt=None, length=None, reverse=False, unrol
     if unroll != 1:
         raise NotImplementedError(
             f'Unroll every {unroll} steps is not implemented yet.')
+
+    xs = []
+
+    if callable(filt):
+        for scanee in scanees:
+            keep, stop = filt(carry, scanee)
+            if all(stop):
+                break
+
+            carry, x = func(carry, scanee)
+            if any(keep):
+                xs.append(x)
+    else:
+        raise NotImplementedError(
+            f'type(filt) == {type(filt)} is not supported.')
+
+    return carry, np.array(xs)
