@@ -50,9 +50,9 @@ def scan(func, carry, scanees=None, filt=None, length=None, reverse=False, unrol
         raise ValueError(
             f'`length` must be specified when `scanees` is None')
 
-    if scanees is not None and length is not None and len(scanees) < length:
+    if scanees is not None and length is not None and len(scanees) != length:
         raise ValueError(
-            f'`length` cannot be larger than len(scanees) == {len(scanees)}')
+            f'`length`=={length} cannot be different len(scanees)=={len(scanees)}')
 
     if reverse:
         raise NotImplementedError(
