@@ -44,8 +44,9 @@ def scan(func, carry, scanees=None, filt=None, length=None, reverse=False, unrol
     if filt is None:
         return lax.scan(func, carry, scanees, length, reverse, unroll)
 
-    #-----------------------------------------------------------------------
-    # With filter
+    #=======================================================================
+    # With filter; check arguments first
+
     if scanees is None and length is None:
         raise ValueError(
             f'`length` must be specified when `scanees` is None')
@@ -53,6 +54,10 @@ def scan(func, carry, scanees=None, filt=None, length=None, reverse=False, unrol
     if scanees is not None and length is not None and len(scanees) != length:
         raise ValueError(
             f'`length`=={length} cannot be different len(scanees)=={len(scanees)}')
+
+    if not callable(filt):
+        raise NotImplementedError(
+            f'type(filt) == {type(filt)} is not supported.')
 
     if reverse:
         raise NotImplementedError(
@@ -62,19 +67,17 @@ def scan(func, carry, scanees=None, filt=None, length=None, reverse=False, unrol
         raise NotImplementedError(
             f'Unroll every {unroll} steps is not implemented yet.')
 
+    #-----------------------------------------------------------------------
+    # The actual loop
     xs = []
 
-    if callable(filt):
-        for scanee in scanees:
-            keep, stop = filt(carry, scanee)
-            if all(stop):
-                break
+    for scanee in scanees:
+        keep, stop = filt(carry, scanee)
+        if all(stop):
+            break
 
-            carry, x = func(carry, scanee)
-            if any(keep):
-                xs.append(x)
-    else:
-        raise NotImplementedError(
-            f'type(filt) == {type(filt)} is not supported.')
+        carry, x = func(carry, scanee)
+        if any(keep):
+            xs.append(x)
 
     return carry, np.array(xs)
