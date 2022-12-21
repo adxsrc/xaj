@@ -21,6 +21,14 @@ from jax import numpy as np
 from xaj.sync import any
 
 
+def iterable(x):
+    try:
+        iter(x)
+        return True
+    except TypeError:
+        return False
+
+
 def scan(func, carry, scanees=None, filt=None, length=None, reverse=False, unroll=1):
     """An improved `jax.lax.scan()`
 
@@ -47,10 +55,6 @@ def scan(func, carry, scanees=None, filt=None, length=None, reverse=False, unrol
     #=======================================================================
     # With filter; check arguments first
 
-    if scanees is None and length is None:
-        raise ValueError(
-            f'`length` must be specified when `scanees` is None')
-
     if scanees is not None and length is not None and len(scanees) != length:
         raise ValueError(
             f'`length`=={length} cannot be different len(scanees)=={len(scanees)}')
@@ -69,9 +73,12 @@ def scan(func, carry, scanees=None, filt=None, length=None, reverse=False, unrol
 
     #-----------------------------------------------------------------------
     # The actual loop
+    i  = 0
     xs = []
 
-    for scanee in scanees:
+    while length is None or i < length:
+        scanee = scanees[i] if iterable(scanees) else scanees
+
         keep, cont = filt(carry, scanee)
         if not any(cont):
             break
@@ -79,5 +86,7 @@ def scan(func, carry, scanees=None, filt=None, length=None, reverse=False, unrol
         carry, x = func(carry, scanee)
         if any(keep):
             xs.append(x)
+
+        i += 1
 
     return carry, np.array(xs)
