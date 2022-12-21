@@ -35,3 +35,18 @@ def scan(func, carry, scanees=None, filt=None, length=None, reverse=False, unrol
     reduce memory usage.
 
     """
+    if scanees is None and length is None:
+        raise ValueError(
+            f'`length` must be specified when `scanees` is None')
+
+    if scanees is not None and length is not None and len(scanees) < length:
+        raise ValueError(
+            f'`length` cannot be larger than len(scanees) == {len(scanees)}')
+
+    if reverse:
+        raise NotImplementedError(
+            f'Reverse scan is not implemented yet.')
+
+    if unroll != 1:
+        raise NotImplementedError(
+            f'Unroll every {unroll} steps is not implemented yet.')
