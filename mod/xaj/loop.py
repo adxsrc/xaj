@@ -18,7 +18,7 @@
 
 from jax import lax
 from jax import numpy as np
-from xaj.sync import all, any
+from xaj.sync import any
 
 
 def scan(func, carry, scanees=None, filt=None, length=None, reverse=False, unroll=1):
@@ -72,8 +72,8 @@ def scan(func, carry, scanees=None, filt=None, length=None, reverse=False, unrol
     xs = []
 
     for scanee in scanees:
-        keep, stop = filt(carry, scanee)
-        if all(stop):
+        keep, cont = filt(carry, scanee)
+        if not any(cont):
             break
 
         carry, x = func(carry, scanee)

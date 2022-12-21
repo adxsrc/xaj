@@ -58,8 +58,7 @@ def test_scan():
 
 
     def filt(carry, scanee):
-        print(carry, scanee)
-        return True, carry >= 2
+        return True, carry < 2
 
     sf  = lambda *args, **kwargs: scan(func, *args, filt=filt, **kwargs)
     jsf = jit(sf)
