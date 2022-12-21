@@ -60,11 +60,11 @@ def test_scan():
     def filt(carry, scanee):
         return True, carry < 2
 
-    sf  = lambda *args, **kwargs: scan(func, *args, filt=filt, **kwargs)
+    sf  = lambda c: scan(func, c, filt=filt, length=None)
     jsf = jit(sf)
-    vsf = vmap(sf, (0,None))
+    vsf = vmap(sf)
 
-    c, s = vsf(np.array([0,10,20]), np.arange(4))
+    c, s = vsf(np.array([0,10,20]))
     assert (
         np.all(c == np.array([2,12,22])) and
         np.all(s == np.array([
