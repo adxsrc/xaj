@@ -16,6 +16,9 @@
 """scan(), a conditional lux.scan() with early termination"""
 
 
+from jax import lax
+
+
 def scan(func, carry, scanees=None, filt=None, length=None, reverse=False, unroll=1):
     """An improved `jax.lax.scan()`
 
@@ -35,6 +38,12 @@ def scan(func, carry, scanees=None, filt=None, length=None, reverse=False, unrol
     reduce memory usage.
 
     """
+    # No filter, no early stop; use lax.scan()
+    if filt is None:
+        return lax.scan(func, carry, scanees, length, reverse, unroll)
+
+    #-----------------------------------------------------------------------
+    # With filter
     if scanees is None and length is None:
         raise ValueError(
             f'`length` must be specified when `scanees` is None')
