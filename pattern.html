@@ -1,0 +1,209 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Design Patterns &#8212; XAJ 0.2.0-dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Implementation" href="implementation.html" />
+    <link rel="prev" title="Interface Design" href="interface.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="design-patterns">
+<h1>Design Patterns<a class="headerlink" href="#design-patterns" title="Permalink to this headline">¶</a></h1>
+<p>While auto vectorizing and parallel maps <code class="docutils literal notranslate"><span class="pre">vmap</span></code> and <code class="docutils literal notranslate"><span class="pre">pmap</span></code> are
+straightforward for pure functions because they are embarrassingly
+(i.e., naturally) parallelizable, numerical integrations are not.
+Depending on initial conditions, different realizations of ODE
+solution may take different stepsize.
+To maintain composability with <code class="docutils literal notranslate"><span class="pre">JAX</span></code> transformations, we need to
+limit the scope of <code class="docutils literal notranslate"><span class="pre">XAJ</span></code>, which leads to interesting design
+patterns.</p>
+<section id="stepping-engine">
+<span id="sec-pattern-stepping-engine"></span><h2>Stepping Engine<a class="headerlink" href="#stepping-engine" title="Permalink to this headline">¶</a></h2>
+<p>Consider a scenario that we evolve <code class="docutils literal notranslate"><span class="pre">n</span></code> planets around the sun.
+Because their different orbital time scales and ellipticities, after,
+e.g., 4 steps, their solutions would advance to</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">p0</span> <span class="o">|----&gt;|--&gt;|---&gt;|----&gt;|</span>
+<span class="n">p1</span> <span class="o">|--&gt;|--&gt;|--&gt;|--&gt;|</span>
+<span class="n">p2</span> <span class="o">|-&gt;|-&gt;|&gt;|&gt;|</span>
+<span class="n">p3</span> <span class="o">|&gt;|&gt;|&gt;|&gt;|</span>
+   <span class="o">^</span><span class="n">t0</span>     <span class="o">^</span><span class="n">t1</span>     <span class="o">^</span><span class="n">t2</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">t0</span></code> is the time that we specify the initial conditions, and
+<code class="docutils literal notranslate"><span class="pre">t1</span></code> is the minimal final time for all the planets.</p>
+<p>Suppose we want to evolve all planets up to <code class="docutils literal notranslate"><span class="pre">t2</span></code>, the most
+computationally efficient way is to change the batch size and
+integrate <em>only</em> <code class="docutils literal notranslate"><span class="pre">p2</span></code> and <code class="docutils literal notranslate"><span class="pre">p3</span></code> up to <code class="docutils literal notranslate"><span class="pre">t2</span></code>.
+However, we <em>do not</em> support this in <code class="docutils literal notranslate"><span class="pre">XAJ</span></code>’s core API.
+This is because such a smart rebatching is inconsistent with the
+assumptions in <code class="docutils literal notranslate"><span class="pre">JAX</span></code> and would break composability.</p>
+<p>Nevertheless, this does not mean we cannot do better than the above
+chart.
+For <code class="docutils literal notranslate"><span class="pre">p0</span></code>, the changing stepsize suggests that there are multiple
+trial in the integration.
+Hence, a better presentation this job is probably</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">p0</span> <span class="o">|----&gt;|---&gt;|</span>
+         <span class="o">|--&gt;|---&gt;|</span>
+<span class="n">p1</span> <span class="o">|--&gt;|--&gt;|--&gt;|--&gt;|</span>
+<span class="n">p2</span> <span class="o">|-&gt;|-&gt;|-&gt;|</span>
+         <span class="o">|&gt;|&gt;|</span>
+<span class="n">p3</span> <span class="o">|&gt;|&gt;|&gt;|&gt;|</span>
+   <span class="o">^</span><span class="n">t0</span>     <span class="o">^</span><span class="n">t1</span>     <span class="o">^</span><span class="n">t2</span>
+</pre></div>
+</div>
+<p>In this new scenario, while each particle went through 4 steps, for
+<code class="docutils literal notranslate"><span class="pre">p0</span></code> and <code class="docutils literal notranslate"><span class="pre">p2</span></code>, only 3 steps satisfy the tolerance and contribute
+to the solution.
+Given the SIMD architecture in GPU and TPU, a naive nested loop
+implementation would evolve the above problem in the following steps</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">p0</span> <span class="o">|</span><span class="n">S</span><span class="o">|</span><span class="n">T</span><span class="p">:</span><span class="n">S</span><span class="o">|</span><span class="n">S</span><span class="p">:</span><span class="n">D</span><span class="o">|</span><span class="n">E</span><span class="o">|</span>
+<span class="n">p1</span> <span class="o">|</span><span class="n">S</span><span class="o">|</span><span class="n">S</span><span class="p">:</span><span class="n">D</span><span class="o">|</span><span class="n">S</span><span class="p">:</span><span class="n">D</span><span class="o">|</span><span class="n">S</span><span class="o">|</span>
+<span class="n">p2</span> <span class="o">|</span><span class="n">S</span><span class="o">|</span><span class="n">S</span><span class="p">:</span><span class="n">D</span><span class="o">|</span><span class="n">T</span><span class="p">:</span><span class="n">S</span><span class="o">|</span><span class="n">E</span><span class="o">|</span>
+<span class="n">p2</span> <span class="o">|</span><span class="n">S</span><span class="o">|</span><span class="n">S</span><span class="p">:</span><span class="n">D</span><span class="o">|</span><span class="n">S</span><span class="p">:</span><span class="n">D</span><span class="o">|</span><span class="n">S</span><span class="o">|</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">S</span></code> stands for (successful) stepping, <code class="docutils literal notranslate"><span class="pre">T</span></code> stands for trial,
+<code class="docutils literal notranslate"><span class="pre">D</span></code> stands for dropped calculation, <code class="docutils literal notranslate"><span class="pre">E</span></code> stands for extra, and
+<code class="docutils literal notranslate"><span class="pre">:</span></code> seperates the steps in an inner loop.
+Although the 2 trail <code class="docutils literal notranslate"><span class="pre">T</span></code> calculations in the above chart are
+unavoidable, there are 6 dropped <code class="docutils literal notranslate"><span class="pre">D</span></code> and 2 extra <code class="docutils literal notranslate"><span class="pre">E</span></code> calculations
+that do not help to achieve the required numerical solution.</p>
+<p>One interesting observation here is that the trail and the actual
+successful calculations are computationally identical.
+Therefore, if we integrate the step controller with the driver, it is
+possible to fuse the two types of calculations.
+This will result</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">p0</span> <span class="o">|</span><span class="n">S</span><span class="o">|</span><span class="n">T</span><span class="p">:</span><span class="n">S</span><span class="o">|</span><span class="n">S</span><span class="o">|</span>
+<span class="n">p1</span> <span class="o">|</span><span class="n">S</span><span class="o">|</span><span class="n">S</span><span class="o">|</span><span class="n">S</span><span class="o">|</span><span class="n">S</span><span class="o">|</span>
+<span class="n">p2</span> <span class="o">|</span><span class="n">S</span><span class="o">|</span><span class="n">S</span><span class="o">|</span><span class="n">T</span><span class="p">:</span><span class="n">S</span><span class="o">|</span>
+<span class="n">p2</span> <span class="o">|</span><span class="n">S</span><span class="o">|</span><span class="n">S</span><span class="o">|</span><span class="n">S</span><span class="o">|</span><span class="n">S</span><span class="o">|</span>
+</pre></div>
+</div>
+<p>which saves 33% of the computation from the naive implementation; or
+in other words avoid 50% of wasted computation from the optimal
+implementation.</p>
+</section>
+<section id="dense-output">
+<h2>Dense Output<a class="headerlink" href="#dense-output" title="Permalink to this headline">¶</a></h2>
+<p>In <code class="docutils literal notranslate"><span class="pre">XAJ</span></code>’s <a class="reference internal" href="interface.html"><span class="doc">interface signatures</span></a>, <code class="docutils literal notranslate"><span class="pre">x(t,</span> <span class="pre">t0,</span> <span class="pre">x0,</span>
+<span class="pre">aux)</span></code> can in principle be a pure function without side effect (and
+internal states).
+However, many adaptive integrators support dense output, where the
+numerical solutions are saved as piece-wise polynomials for later
+interpolation.
+This is particularly efficient if we want to obtain numerical
+solutions on a large number of sampling points.</p>
+<p>How should we design <code class="docutils literal notranslate"><span class="pre">XAJ</span></code> to take advantage of dense output?</p>
+<p>A natural choice is to cache the dense outputs with <code class="docutils literal notranslate"><span class="pre">x(t,</span> <span class="pre">t0,</span> <span class="pre">x0,</span>
+<span class="pre">aux)</span></code>, and reuse the cache whenever possible.
+Given that the numerical solutions in general depend on <code class="docutils literal notranslate"><span class="pre">t0</span></code>,
+<code class="docutils literal notranslate"><span class="pre">x0</span></code>, and <code class="docutils literal notranslate"><span class="pre">aux</span></code>, we can use the tuple <code class="docutils literal notranslate"><span class="pre">(t0,</span> <span class="pre">x0,</span> <span class="pre">aux)</span></code> as the
+cache index.
+The cache should also be a
+<a class="reference external" href="https://jax.readthedocs.io/en/latest/pytrees.html">pytree</a>
+in order to be composable with other <code class="docutils literal notranslate"><span class="pre">JAX</span></code> functions.</p>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">XAJ</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="interface.html">Interface Design</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Design Patterns</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#stepping-engine">Stepping Engine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dense-output">Dense Output</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="implementation.html">Implementation</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="interface.html" title="previous chapter">Interface Design</a></li>
+      <li>Next: <a href="implementation.html" title="next chapter">Implementation</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022, Chi-kwan Chan.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.5.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/pattern.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

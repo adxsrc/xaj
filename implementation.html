@@ -1,0 +1,228 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Implementation &#8212; XAJ 0.2.0-dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Design Patterns" href="pattern.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="implementation">
+<h1>Implementation<a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h1>
+<p>To better implement <code class="docutils literal notranslate"><span class="pre">JAX</span></code>’s
+<a class="reference internal" href="interface.html"><span class="doc">interface</span></a> and
+<a class="reference internal" href="pattern.html"><span class="doc">design patterns</span></a>,
+we need to break its numerical solutions into multiple components.</p>
+<section id="stepper">
+<h2>Stepper<a class="headerlink" href="#stepper" title="Permalink to this headline">¶</a></h2>
+<p>An <code class="docutils literal notranslate"><span class="pre">xaj.core.Stepper</span></code> advances the state of a system of ODEs to a
+different state.
+It is implemented as a pure function using python function closure,
+and is composible with standard <code class="docutils literal notranslate"><span class="pre">JAX</span></code> transformations such as
+<code class="docutils literal notranslate"><span class="pre">jit</span></code> and <code class="docutils literal notranslate"><span class="pre">vmap</span></code>.</p>
+</section>
+<section id="error-estimator">
+<h2>Error Estimator<a class="headerlink" href="#error-estimator" title="Permalink to this headline">¶</a></h2>
+<p>An <code class="docutils literal notranslate"><span class="pre">xaj.core.ErrorEstimator</span></code> estimates the numerical error of a step
+and is used in adaptive stepsize control.
+It may be based on step-doubling or embedding technique, or can be a
+custom function based on, e.g., some conserved quantities in the
+system of ODEs.
+It is implemented as a pure function using python function closure,
+and is composible with standard <code class="docutils literal notranslate"><span class="pre">JAX</span></code> transformations such as
+<code class="docutils literal notranslate"><span class="pre">jit</span></code> and <code class="docutils literal notranslate"><span class="pre">vmap</span></code>.</p>
+</section>
+<section id="stepsize-controller">
+<h2>Stepsize Controller<a class="headerlink" href="#stepsize-controller" title="Permalink to this headline">¶</a></h2>
+<p>An <code class="docutils literal notranslate"><span class="pre">xaj.core.StepController</span></code> adjusts the step size based on the
+error estimator and/or custom function.
+While it may be more natural to implement it as a stateful object, we
+choose not to do it to match better with the <code class="docutils literal notranslate"><span class="pre">JAX</span></code> ecosystem.
+It is implemented as a pure function using python function closure,
+and is composible with standard <code class="docutils literal notranslate"><span class="pre">JAX</span></code> transformations such as
+<code class="docutils literal notranslate"><span class="pre">jit</span></code> and <code class="docutils literal notranslate"><span class="pre">vmap</span></code>.</p>
+</section>
+<section id="stepping-engine">
+<h2>Stepping Engine<a class="headerlink" href="#stepping-engine" title="Permalink to this headline">¶</a></h2>
+<p>We use <code class="docutils literal notranslate"><span class="pre">jax.lax.while_loop</span></code> to implement the
+<a class="reference internal" href="pattern.html#sec-pattern-stepping-engine"><span class="std std-ref">Stepping Engine</span></a>, which has the semantics</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">while_loop</span><span class="p">(</span><span class="n">cond</span><span class="p">,</span> <span class="n">body</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+    <span class="k">while</span> <span class="n">cond</span><span class="p">(</span><span class="n">state</span><span class="p">):</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="n">body</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">state</span>
+</pre></div>
+</div>
+<p>Because the functions <code class="docutils literal notranslate"><span class="pre">cond</span></code> and <code class="docutils literal notranslate"><span class="pre">body</span></code> are pure, we need to pass
+to them the full state, which includes the current step size, the
+current solution of the ODEs, the shared states across steps, etc.
+The body function can be logically implement with the following code.</p>
+<div class="highlight-python3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">body</span><span class="p">(</span><span class="n">state</span><span class="p">):</span>
+    <span class="n">_</span><span class="p">,</span> <span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">x</span><span class="p">),</span> <span class="p">(</span><span class="n">h</span><span class="p">,</span><span class="n">k</span><span class="p">),</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">r</span><span class="p">)</span> <span class="o">=</span> <span class="n">state</span>
+
+    <span class="n">E</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">K</span> <span class="o">=</span> <span class="n">step</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+    <span class="n">H</span><span class="p">,</span> <span class="n">redo</span> <span class="o">=</span> <span class="n">ctrl</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">redo</span><span class="p">:</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="n">_</span><span class="p">,</span> <span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="n">X</span><span class="p">),</span> <span class="p">(</span><span class="n">H</span><span class="p">,</span><span class="n">k</span><span class="p">),</span> <span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">r</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="c1"># retry</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="n">_</span><span class="p">,</span> <span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="n">X</span><span class="p">),</span> <span class="p">(</span><span class="n">H</span><span class="p">,</span><span class="n">k</span><span class="p">),</span> <span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>   <span class="c1"># continue</span>
+
+    <span class="k">return</span> <span class="n">state</span>
+</pre></div>
+</div>
+</section>
+<section id="cache-and-dense-output">
+<h2>Cache and Dense Output<a class="headerlink" href="#cache-and-dense-output" title="Permalink to this headline">¶</a></h2>
+<p>An <code class="docutils literal notranslate"><span class="pre">xaj.core.Cache</span></code> stores the solution of the system of ODEs at
+full step or dense outputs.
+They are implemented as pytrees.</p>
+</section>
+<section id="pacer">
+<h2>Pacer<a class="headerlink" href="#pacer" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><p>pace (<em>verb</em>): walk at a steady and consistent speed, especially
+back and forth and as an expression of one’s anxiety or annoyance.</p>
+</div></blockquote>
+<p>An <code class="docutils literal notranslate"><span class="pre">xaj.core.Pacer</span></code> combines <code class="docutils literal notranslate"><span class="pre">Stepper</span></code>, <code class="docutils literal notranslate"><span class="pre">ErrorEstimator</span></code>,
+<code class="docutils literal notranslate"><span class="pre">StepController</span></code> and <code class="docutils literal notranslate"><span class="pre">States</span></code> to integrate the system of ODEs one
+step toward the required direction.</p>
+</section>
+<section id="treker">
+<h2>Treker<a class="headerlink" href="#treker" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><p>Trek (<em>verb</em>): go on a long arduous journey, typically on foot.</p>
+</div></blockquote>
+<p>An <code class="docutils literal notranslate"><span class="pre">xaj.core.Treker</span></code> loops through multiple paces to integrate the
+system of ODEs.
+Given that the adaptive stepsize controller may provide a stepsize
+larger than the target, <cite>Treker</cite> may integrate <em>beyond</em> the target,
+and then return the target value by interpolation using dense output.</p>
+<p>In addition, because <code class="docutils literal notranslate"><span class="pre">XAJ</span></code> allows for integrating backward,
+<code class="docutils literal notranslate"><span class="pre">Treker</span></code> needs to keep both the lower and upper limits of the
+independent parameter.
+When a solution is first set up, we have <code class="code docutils literal notranslate"><span class="pre">treker.lower</span> <span class="pre">=</span>
+<span class="pre">trek.upper</span> <span class="pre">=</span> <span class="pre">t0</span></code>.
+If we ask for a solution at <code class="code docutils literal notranslate"><span class="pre">t</span> <span class="pre">&gt;</span> <span class="pre">t0</span></code>, we integrate forward in
+time and move <code class="code docutils literal notranslate"><span class="pre">treker.upper</span> <span class="pre">&gt;=</span> <span class="pre">t</span></code>.
+If we ask for a solution at <code class="code docutils literal notranslate"><span class="pre">t</span> <span class="pre">&lt;</span> <span class="pre">t0</span></code>, we integrate backward in
+time and move <code class="code docutils literal notranslate"><span class="pre">treker.lower</span> <span class="pre">&lt;=</span> <span class="pre">t</span></code>.
+If another <code class="docutils literal notranslate"><span class="pre">t</span></code> is asked at a later time while <code class="code docutils literal notranslate"><span class="pre">treker.lower</span> <span class="pre">&lt;=</span>
+<span class="pre">t</span> <span class="pre">&lt;=</span> <span class="pre">treker.upper</span></code>, then no actual integration will be done.
+The value of <code class="docutils literal notranslate"><span class="pre">x(t)</span></code> will simply be given by the dense output.</p>
+</section>
+<section id="solution">
+<h2>Solution<a class="headerlink" href="#solution" title="Permalink to this headline">¶</a></h2>
+<p>An <code class="docutils literal notranslate"><span class="pre">xaj.core.Solution</span></code> is a pytree with a <code class="docutils literal notranslate"><span class="pre">__call__()</span></code> method.
+It keeps track of the internal states and cache of numerical solutions
+to a system of ODEs.
+Because it is a pytree, it supports <code class="docutils literal notranslate"><span class="pre">JAX</span></code> transformations such as
+<code class="docutils literal notranslate"><span class="pre">jit</span></code> and <code class="docutils literal notranslate"><span class="pre">vmap</span></code>.</p>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">XAJ</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="interface.html">Interface Design</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pattern.html">Design Patterns</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Implementation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#stepper">Stepper</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#error-estimator">Error Estimator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#stepsize-controller">Stepsize Controller</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#stepping-engine">Stepping Engine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#cache-and-dense-output">Cache and Dense Output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pacer">Pacer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#treker">Treker</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#solution">Solution</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="pattern.html" title="previous chapter">Design Patterns</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022, Chi-kwan Chan.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.5.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/implementation.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
