@@ -29,6 +29,8 @@ setup(
     author='Chi-kwan Chan',
     author_email='chanc@arizona.edu',
     description='ODE integrator for JAX',
+    long_description=open('README.md').read(),
+    long_description_content_type='text/markdown',
     packages=find_packages('mod'),
     package_dir={'': 'mod'},
     python_requires='>=3.7',
