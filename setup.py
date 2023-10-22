@@ -24,7 +24,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='xaj',
-    version='0.1.6',
+    version='0.1.7',
     url='https://github.com/adxsrc/xaj',
     author='Chi-kwan Chan',
     author_email='chanc@arizona.edu',
