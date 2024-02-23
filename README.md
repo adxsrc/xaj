@@ -1,5 +1,15 @@
-[![Lint and test XAJ](https://github.com/adxsrc/xaj/actions/workflows/python-test.yml/badge.svg)](https://github.com/adxsrc/xaj/actions/workflows/python-test.yml)
-[![Publish XAJ to PyPI](https://github.com/adxsrc/xaj/actions/workflows/python-publish.yml/badge.svg)](https://github.com/adxsrc/xaj/actions/workflows/python-publish.yml)
+[![Lint & test](https://github.com/adxsrc/xaj/actions/workflows/python-package.yml/badge.svg)](https://github.com/adxsrc/xaj/actions/workflows/python-package.yml)
+[![PyPI](https://github.com/adxsrc/xaj/actions/workflows/python-publish.yml/badge.svg)](https://pypi.org/project/xaj/)
+
+> [!WARNING]
+>
+>   This version of `XAJ` works only with `jax` and `jaxlib` 0.3.
+>   But `jaxlib` 0.3 is not available on PyPI.
+>   To install this version of `XAJ`, please first install `jaxlib`
+>   with:
+>
+>       pip install jaxlib==0.3.25 -f https://storage.googleapis.com/jax-releases/jax_releases.html
+
 
 # `XAJ`
 
