@@ -33,7 +33,7 @@ setup(
     long_description_content_type='text/markdown',
     packages=find_packages('mod'),
     package_dir={'': 'mod'},
-    python_requires='>=3.7',
+    python_requires='>=3.7,<3.12',
     install_requires=[
         'jaxlib>=0.3.0,<0.4.0',
         'jax>=0.3.0,<0.4.0',
