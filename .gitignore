@@ -2,11 +2,15 @@
 !*/
 
 !*.*py
+!*.*ml
 !*file
-!*.y*ml
 
 __pycache__/
 *.egg-info/
 
 !*.ipynb
 .ipynb_checkpoints/
+
+!*.md
+!*.rst
+_build/
